@@ -79,7 +79,6 @@ void pid(long offset) {
 			OnRev(OUT_A, 25);
 			OnRev(OUT_C, 50);
 		}*/
-		Wait(10);
 	}
 }
 
