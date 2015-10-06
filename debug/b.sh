@@ -1,0 +1,1 @@
+nbc -sm- -O="sokobot.rxe" -S=usb -d /home/alrekr/workspace/git/sokobot/src/main.nxc 
