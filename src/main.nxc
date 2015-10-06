@@ -8,10 +8,8 @@ mutex motor_control_mutex;
 void init_sensors() {
 	SetSensorType(S1, SENSOR_TYPE_LIGHT_ACTIVE);
 	ResetSensor(S1);
-	// Wait(333); // uncomment for coolness factor
 	SetSensorType(S2, SENSOR_TYPE_LIGHT_ACTIVE);
 	ResetSensor(S2);
-	// Wait(333); // uncomment for coolness factor
 	//SetSensorType(S3, SENSOR_TYPE_LIGHT_ACTIVE);
 	//ResetSensor(S3);
 	SetSensorTouch(S4);
@@ -23,7 +21,7 @@ long calibrate_black_white() {
 	long black = SENSOR_2;
 
 	long offset = (white + black) / 2;
-	//long offset = (white - black)/2 + black;
+	ClearScreen();
 	return offset;
 }
 
@@ -38,7 +36,7 @@ void pid(long offset) {
 	int motor_a = 0;
 	int motor_b = 0;
 	while (true) {
-		left = SENSOR_2;// SENSOR_2; 
+		left = SENSOR_2; 
 		
 		error = left - offset;
 		integral += error;
@@ -49,30 +47,10 @@ void pid(long offset) {
 		motor_b = Tp - turn;
 		OnRev(OUT_A, motor_a);
 		OnRev(OUT_C, motor_b);
-		/*ClearScreen();
-		TextOut(0, LCD_LINE5, "Motor");
-		TextOut(0, LCD_LINE4, "Offset");
-		TextOut(0, LCD_LINE3, "Error");
-		TextOut(0, LCD_LINE1, "Speed_A");
-		TextOut(0, LCD_LINE2, "Speed_B");
-		NumOut(64, LCD_LINE1, motor_a);
-		NumOut(64, LCD_LINE2, motor_b);
-		NumOut(64, LCD_LINE3, error);
-		NumOut(64, LCD_LINE4, offset);
-		NumOut(64, LCD_LINE5, turn);*/
 		last_error = error;
 		
-		/*if (SENSOR_4 == 1) {
-			Off(OUT_AC);
-			Wait(50);
-			while (SENSOR_4 != 1) {
-
-			}
-		}*/
-		//Wait(20);
-		
 		/* simple on-off solution
-		if (lv < offset) {
+		if (left < offset) {
 			OnRev(OUT_A, 50);
 			OnRev(OUT_C, 25);
 		} else {
