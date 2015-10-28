@@ -1,0 +1,1 @@
+nbc -sm- -O="reftest.rxe" -S=usb -d /home/alrekr/workspace/git/sokobot/src/reflection_tester.nxc 

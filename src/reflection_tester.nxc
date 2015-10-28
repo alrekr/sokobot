@@ -1,0 +1,23 @@
+task main() {
+	SetSensorType(S1, SENSOR_TYPE_LIGHT_ACTIVE);
+	ResetSensor(S1);
+	SetSensorType(S2, SENSOR_TYPE_LIGHT_ACTIVE);
+	ResetSensor(S2);
+	SetSensorType(S3, SENSOR_TYPE_LIGHT_ACTIVE);
+	ResetSensor(S3);
+
+	int left, right, back;
+	while (true) {
+		left = SENSOR_1;
+		right = SENSOR_2;
+		back = SENSOR_3;
+		TextOut(0, LCD_LINE1, "Left");
+		TextOut(0, LCD_LINE2, "Right");
+		TextOut(0, LCD_LINE3, "Back");
+		TextOut(0, LCD_LINE4, "Threshold");
+		NumOut(64, LCD_LINE1, left);
+		NumOut(64, LCD_LINE2, right);
+		NumOut(64, LCD_LINE3, back);
+		NumOut(64, LCD_LINE4, 650);
+	}
+}
