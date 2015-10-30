@@ -239,7 +239,9 @@ void turn_robot(char direction)
 		OnFwdSync(OUT_AC, 80, 50);
 		Wait(750);
 		while (true) {
-			if (LEFT < BLACK_THRESHOLD) {
+			if (RIGHT < BLACK_THRESHOLD) {
+				OnFwdSync(OUT_AC, 50, 50);
+			} else if (LEFT < BLACK_THRESHOLD) {
 				break;
 			}
 		}
@@ -248,21 +250,35 @@ void turn_robot(char direction)
 		OnFwdSync(OUT_AC, 80, -50);
 		Wait(750);
 		while (true) {
-			if (RIGHT < BLACK_THRESHOLD) {
+			if (LEFT < BLACK_THRESHOLD) {
+				OnFwdSync(OUT_AC, 50, -50);
+			} else if (RIGHT < BLACK_THRESHOLD) {
 				break;
 			}
 		}
 		//do something based on n
 		break;
 	case 'a':
-	int c = 0;
+	int right = 0, right_last = 0, left = 0, left_last = 0;
+	int c = 0, k = 0;
 		OnFwdSync(OUT_AC, 80, 50);
 		Wait(750);
 		while (true) {
-			if (LEFT < BLACK_THRESHOLD && c == 0) {
+			right_last = right;
+			left_last = left;
+			right = RIGHT;
+			left = LEFT;
+			if (right < BLACK_THRESHOLD && right_last > BLACK_THRESHOLD && k == 0) {
+				PlayToneEx(2500, 150, 1, false);
+				k++;
+			} else if (right < BLACK_THRESHOLD && right_last > BLACK_THRESHOLD && k == 1) {
+				PlayToneEx(5000, 150, 1, false);
+				OnFwdSync(OUT_AC, 50, 50);
+			} else if (left < BLACK_THRESHOLD && left_last > BLACK_THRESHOLD && c == 0) {
+				PlayToneEx(2763, 150, 1, false);
 				c++;
-				Wait(250);
-			} else if (LEFT < BLACK_THRESHOLD && c == 1) {
+			} else if (left < BLACK_THRESHOLD && left_last > BLACK_THRESHOLD && c == 1) {
+				PlayToneEx(5526, 150, 1, false);
 				break;
 			}
 		}
@@ -272,7 +288,8 @@ void turn_robot(char direction)
 	Off(OUT_AC);
 }
 
-void back_away_from_can() {
+void back_away_from_can()
+{
 	int tp = CAREFUL_SPEED;
 	int left, right, integral, error, last_error, derivative, turn, local_line, motor_a, motor_b;
 	OnFwdSync(OUT_AC, 99, 0); //back up
@@ -550,7 +567,8 @@ task control()
 	// drive_forwards(1, false);
 }
 
-task emergency_stop() {
+task emergency_stop()
+{
 	while (true) {
 		if(ButtonPressed(BTNCENTER, false)) {
 			StopAllTasks();
@@ -585,22 +603,3 @@ task main()
 	Wait(300);
 	Precedes(emergency_stop, control, line_counter);
 }
-
-	// ClearScreen();
-	// int left, right, back;
-	// TextOut(0, LCD_LINE1, "Left");
-	// TextOut(0, LCD_LINE2, "Right");
-	// TextOut(0, LCD_LINE3, "Back");
-	// TextOut(0, LCD_LINE4, "Threshold");
-	// NumOut(64, LCD_LINE4, BLACK_THRESHOLD);
-	// while (true) {
-	// 	left = LEFT;
-	// 	right = RIGHT;
-	// 	back = BACK;
-	// 	TextOut(64, LCD_LINE1, "     ");
-	// 	TextOut(64, LCD_LINE2, "     ");
-	// 	TextOut(64, LCD_LINE3, "     ");
-	// 	NumOut(64, LCD_LINE1, left);
-	// 	NumOut(64, LCD_LINE2, right);
-	// 	NumOut(64, LCD_LINE3, back);
-	// }
