@@ -11,7 +11,6 @@ int Ki = KI;
 int Tp = TP;
 int lines_global = INIT;
 mutex lines_global_mtx;
-// mutex motor_control_mutex;
 
 float left_white_offset = 0;
 float left_black_offset = 0;
@@ -31,6 +30,11 @@ char to_the_left = 'l';
 char to_the_right = 'r';
 char around = 'a';
 
+//for pid
+int tp = INIT, left = INIT, right = INIT, error = INIT, integral = INIT, 
+		derivative = INIT, turn = INIT, motor_a = INIT, motor_b = INIT, 
+		last_error = INIT;
+
 void init_sensors() 
 {
 	SetSensorType(S1, SENSOR_TYPE_LIGHT_ACTIVE);
@@ -43,75 +47,12 @@ void init_sensors()
 	ResetSensor(S4);
 }
 
-void calibrate() //nice solution would be to make automatic calibration.
-{
-	float left, right, back;
-
-	TextOut(0, LCD_LINE1, "Place sensors on");
-	TextOut(0, LCD_LINE2, "white, press red");
-	TextOut(0, LCD_LINE3, "button when");
-	TextOut(0, LCD_LINE4, "ready.");
-	while (true) {
-		left = SENSOR_1;
-		right = SENSOR_2;
-		back = SENSOR_3;
-		TextOut(0, LCD_LINE6, "Left");
-		NumOut(64, LCD_LINE6, left);
-		TextOut(0, LCD_LINE7, "Right");
-		NumOut(64, LCD_LINE7, right);
-		TextOut(0, LCD_LINE8, "Back");
-		NumOut(64, LCD_LINE8, back);
-		if (SENSOR_4 == 1) {
-			break;
-		}
-	}
-
-	left_white_offset = left;
-	right_white_offset = right;
-	back_white_offset = back;
-
-	ClearScreen();
-	TextOut(0, LCD_LINE1, "Place sensors on");
-	TextOut(0, LCD_LINE2, "black, press red");
-	TextOut(0, LCD_LINE3, "button when");
-	TextOut(0, LCD_LINE4, "ready.");
-	Wait(1000);
-
-	while (true) {
-		left = SENSOR_1;
-		right = SENSOR_2;
-		back = SENSOR_3;
-		TextOut(0, LCD_LINE6, "Left");
-		NumOut(64, LCD_LINE6, left);
-		TextOut(0, LCD_LINE7, "Right");
-		NumOut(64, LCD_LINE7, right);
-		TextOut(0, LCD_LINE8, "Back");
-		NumOut(64, LCD_LINE8, back);
-		if (SENSOR_4 == 1) {
-			break;
-		}
-	}
-
-	left_black_offset = left;
-	right_black_offset = right;
-	back_black_offset = back;
-
-	left_gain = 100.0 / (left_white_offset - left_black_offset);
-	right_gain = 100.0 / (right_white_offset - right_black_offset);
-	back_gain = 100.0 / (back_white_offset - back_black_offset);
-
-	left_offset = left_black_offset;
-	right_offset = right_black_offset;
-	back_offset = back_black_offset;
-	ClearScreen();
-}
-
 void auto_calibrate()
 {
 	int left, right, back;
 	int left_max = 0, right_max = 0, back_max = 0;
 	int left_min = 1024, right_min = 1024, back_min = 1024;
-	OnRevSync(OUT_AC, 40, 50);
+	OnRevSync(OUT_AC, CALIBRATION_TURN_SPEED, 50);
 
 	TextOut(0, LCD_LINE1, "L, min");
 	TextOut(0, LCD_LINE2, "L, max");
@@ -120,6 +61,7 @@ void auto_calibrate()
 	TextOut(0, LCD_LINE7, "B, min");
 	TextOut(0, LCD_LINE8, "B, max");
 
+	//perform sampling ...
 	for (int i = 0; i < 2500; i++) {
 		left = SENSOR_1;
 		right = SENSOR_2;
@@ -168,32 +110,29 @@ void auto_calibrate()
 	back_offset = back_min;
 }
 
-/*void pid(long offset) 
+void pid() 
 {
-	int integral = INIT;
-	int last_error = INIT;
-	int derivative = INIT;
-	int error = INIT;
-	int left = INIT;
-	int right = INIT;
-	int turn = INIT;
-	int motor_a = INIT;
-	int motor_b = INIT;
-	while (true) {
-		left = SENSOR_2; 
+	left = LEFT;
+	right = RIGHT;
 
-		error = left - offset;
-		integral += error;
-		derivative = error - last_error;
-		
-		turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-		motor_a = Tp + turn;
-		motor_b = Tp - turn;
-		OnRev(OUT_A, motor_a);
-		OnRev(OUT_C, motor_b);
-		last_error = error;
- 	}
-}*/
+	error = left - right;
+	integral += error;
+	derivative = error - last_error;
+	turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
+	motor_a = tp + turn;
+	motor_b = tp - turn;
+
+	if (motor_a > SPEED_LIMIT) {
+		motor_a = SPEED_LIMIT;
+	}
+	if (motor_b > SPEED_LIMIT) {
+		motor_b = SPEED_LIMIT;
+	}
+
+	OnRev(OUT_A, motor_a);
+	OnRev(OUT_C, motor_b);
+	last_error = error;
+}
 
 /*void on_off_control(long offset) 
 {
@@ -222,12 +161,10 @@ task line_counter()
 		if (last_value > BLACK_THRESHOLD && value <= BLACK_THRESHOLD) {
 			Acquire(lines_global_mtx);
 			lines_global++;
+			NumOut(64, LCD_LINE7, lines_global);
 			Release(lines_global_mtx); 
+			Wait(500);
 		}
-		//TextOut(0, LCD_LINE1, "                ");
-		//NumOut(0, LCD_LINE1, value);
-		//NumOut(64, LCD_LINE1, last_value);
-		NumOut(64, LCD_LINE7, lines_global);
 	}
 }
 
@@ -236,7 +173,7 @@ void turn_robot(char direction)
 {
 	switch (direction) { //plus is right, negative is left
 	case 'l':
-		OnFwdSync(OUT_AC, 80, 50);
+		OnFwdSync(OUT_AC, TURN_SPEED, 50);
 		Wait(750);
 		while (true) {
 			if (RIGHT < BLACK_THRESHOLD) {
@@ -247,7 +184,7 @@ void turn_robot(char direction)
 		}
 		break;
 	case 'r':
-		OnFwdSync(OUT_AC, 80, -50);
+		OnFwdSync(OUT_AC, TURN_SPEED, -50);
 		Wait(750);
 		while (true) {
 			if (LEFT < BLACK_THRESHOLD) {
@@ -256,12 +193,11 @@ void turn_robot(char direction)
 				break;
 			}
 		}
-		//do something based on n
 		break;
 	case 'a':
 	int right = 0, right_last = 0, left = 0, left_last = 0;
 	int c = 0, k = 0;
-		OnFwdSync(OUT_AC, 80, 50);
+		OnFwdSync(OUT_AC, TURN_SPEED, 50);
 		Wait(750);
 		while (true) {
 			right_last = right;
@@ -321,20 +257,25 @@ void back_away_from_can()
 		OnRev(OUT_A, motor_a);
 		OnRev(OUT_C, motor_b);
 		last_error = error;
+		Acquire(lines_global_mtx);
 		if (local_line != lines_global) { //line detected.
+			Release(lines_global_mtx);
 			break;
 		}
+		Release(lines_global_mtx);
 	}
 	Off(OUT_AC);
 }
 
 void drive_forwards(int n, bool pushing) 
 {
-	int tp, left, right, error = INIT, derivative = INIT, integral = INIT, last_error = INIT, 
-			turn = INIT, motor_a = INIT, motor_b = INIT;
-
+	error = INIT;
+	integral = INIT;
+	value = INIT;
 	Acquire(lines_global_mtx);
 	lines_global = INIT;
+	TextOut(64, LCD_LINE7, "   ");
+	NumOut(64, LCD_LINE7, lines_global);
 	Release(lines_global_mtx);
 	
 	if (pushing == true) {
@@ -345,8 +286,7 @@ void drive_forwards(int n, bool pushing)
 			tp = CAREFUL_SPEED;
 			
 			while (true) { //push the can
-				left = LEFT;
-				right = RIGHT;
+				pid();
 
 				Acquire(lines_global_mtx);
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD && lines_global <= n) { 
@@ -355,25 +295,6 @@ void drive_forwards(int n, bool pushing)
 					break;
 				}
 				Release(lines_global_mtx);
-
-				error = left - right;
-				integral += error;
-				derivative = error - last_error;
-
-				turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-				motor_a = tp + turn;
-				motor_b = tp - turn;
-
-				if (motor_a > SPEED_LIMIT) {
-					motor_a = SPEED_LIMIT;
-				}
-				if (motor_b > SPEED_LIMIT) {
-					motor_b = SPEED_LIMIT;
-				}
-
-				OnRev(OUT_A, motor_a);
-				OnRev(OUT_C, motor_b);
-				last_error = error;
 			}
 			Off(OUT_AC);
 			Wait(150);
@@ -387,56 +308,26 @@ void drive_forwards(int n, bool pushing)
 			tp = FAST_SPEED;
 			
 			while (true) { //control until next-to-last line reached.
-				left = LEFT;
-				right = RIGHT;
+				pid();
 
-				error = left - right;
-				integral += error;
-				derivative = error - last_error;
-				turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-				motor_a = tp + turn;
-				motor_b = tp - turn;
-
-				if (motor_a > SPEED_LIMIT) {
-					motor_a = SPEED_LIMIT;
-				}
-				if (motor_b > SPEED_LIMIT) {
-					motor_b = SPEED_LIMIT;
-				}
-
-				OnRev(OUT_A, motor_a);
-				OnRev(OUT_C, motor_b);
-				last_error = error;
 				Acquire(lines_global_mtx);
-			
 				if (lines_global == (n - 1)) {
 					Release(lines_global_mtx);
 					tp = CAREFUL_SPEED;
 					break;
 				}
-			
 				Release(lines_global_mtx);
 			}
 
-			while(true) { //control until last line reached - currently based on front sensors
-				left = LEFT;
-				right = RIGHT;
-			
+			while (true) { //control until last line reached - currently based on front sensors
+				pid();
+
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD) {
 					Off(OUT_AC);
 					break;
 				}
-			
-				error = left - right;
-				integral += error;
-				derivative = error - last_error;
-				turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-				motor_a = tp + turn;
-				motor_b = tp - turn;
-				OnRev(OUT_A, motor_a);
-				OnRev(OUT_C, motor_b);
-				last_error = error;
 			}
+
 			Wait(150); //make sure the robot stopped completely. Otherwise, wobbly start.
 			back_away_from_can();
 			PlayToneEx(988, 350, SOUND_VOLUME, false);
@@ -450,27 +341,8 @@ void drive_forwards(int n, bool pushing)
 			lines_global = INIT;
 			Release(lines_global_mtx);
 			while (true) {
-				left = LEFT;
-				right = RIGHT;
+				pid();
 
-				error = left - right;
-				integral += error;
-				derivative = error - last_error;
-
-				turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-				motor_a = tp + turn;
-				motor_b = tp - turn;
-
-				if (motor_a > SPEED_LIMIT) {
-					motor_a = SPEED_LIMIT;
-				}
-				if (motor_b > SPEED_LIMIT) {
-					motor_b = SPEED_LIMIT;
-				}
-
-				OnRev(OUT_A, motor_a);
-				OnRev(OUT_C, motor_b);
-				last_error = error;
 				Acquire(lines_global_mtx);
 
 				if (lines_global == n) {
@@ -493,26 +365,7 @@ void drive_forwards(int n, bool pushing)
 			Release(lines_global_mtx);
 			
 			while (true) { //control until last line reached.
-				left = LEFT;
-				right = RIGHT;
-
-				error = left - right;
-				integral += error;
-				derivative = error - last_error;
-				turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-				motor_a = tp + turn;
-				motor_b = tp - turn;
-				
-				if (motor_a > SPEED_LIMIT) {
-					motor_a = SPEED_LIMIT;
-				}
-				if (motor_b > SPEED_LIMIT) {
-					motor_b = SPEED_LIMIT;
-				}
-				
-				OnRev(OUT_A, motor_a);
-				OnRev(OUT_C, motor_b);
-				last_error = error;
+				pid();
 
 				Acquire(lines_global_mtx);
 				if (lines_global == (n - 1) && once_flag == false) {
@@ -534,11 +387,11 @@ void drive_forwards(int n, bool pushing)
 
 task control()
 {
+	//this task will control everything
 	while (SENSOR_4 != 1); //wait for go signal
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
 	Wait(83);
-	//this task will control everything
 	drive_forwards(1, true);
 	Wait(1500);
 	// drive_forwards(2, true);
@@ -546,25 +399,8 @@ task control()
 	// drive_forwards(1, false);
 	// Wait(1500);
 	// drive_forwards(2, false);
-	// drive_forwards(1, false);
-	// PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
-	// turn_robot('l');
-	// PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
-	// drive_forwards(1, false);
-	// PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
-	// turn_robot('r');
-	// PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
-	// drive_forwards(1, false);
-	// PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
-	// turn_robot('a');
-	// PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
-	// drive_forwards(1, false);
+	// Wait(2500);
+	// drive_forwards(4, false);
 }
 
 task emergency_stop()
@@ -582,21 +418,6 @@ task main()
 	//initialise sensors, read commands, launch tasks (control and line_counter)
 	init_sensors();
 	auto_calibrate();
-	// Wait(1000);
-	// OnRevSync(OUT_AC, 90, 0);
-	// Off(OUT_AC);
-	// TextOut(0, LCD_LINE1, "Left");
-	// TextOut(0, LCD_LINE2, "Right");
-	// TextOut(0, LCD_LINE3, "Back");
-	// float left, right, back;
-	// while (true) {
-		// left = LEFT;
-		// right = RIGHT;
-		// back = BACK;
-		// NumOut(64, LCD_LINE1, left);
-		// NumOut(64, LCD_LINE2, right);
-		// NumOut(64, LCD_LINE3, back);
-	// }
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
