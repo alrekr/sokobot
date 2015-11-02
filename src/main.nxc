@@ -110,6 +110,13 @@ void auto_calibrate()
 	back_offset = back_min;
 }
 
+void init_pid_variables()
+{
+	last_error = INIT;
+	derivative = INIT;
+	integral = INIT;
+}
+
 void pid() 
 {
 	left = LEFT;
@@ -226,8 +233,10 @@ void turn_robot(char direction)
 
 void back_away_from_can()
 {
-	int tp = CAREFUL_SPEED;
-	int left, right, integral, error, last_error, derivative, turn, local_line, motor_a, motor_b;
+	tp = CAREFUL_SPEED;
+	init_pid_variables();
+
+	int local_line = 0;
 	OnFwdSync(OUT_AC, 99, 0); //back up
 	Wait(250);
 	turn_robot(around);
@@ -236,27 +245,8 @@ void back_away_from_can()
 	local_line = lines_global;
 	Release(lines_global_mtx);
 	while (true) { //drive forwards until on intersection
-		left = LEFT;
-		right = RIGHT;
+		pid();
 
-		error = left - right;
-		integral += error;
-		derivative = error - last_error;
-
-		turn = SCALE_FACTOR * (Kp * error + Ki * integral + Kd * derivative);
-		motor_a = tp + turn;
-		motor_b = tp - turn;
-
-		if (motor_a > SPEED_LIMIT) {
-			motor_a = SPEED_LIMIT;
-		}
-		if (motor_b > SPEED_LIMIT) {
-			motor_b = SPEED_LIMIT;
-		}
-
-		OnRev(OUT_A, motor_a);
-		OnRev(OUT_C, motor_b);
-		last_error = error;
 		Acquire(lines_global_mtx);
 		if (local_line != lines_global) { //line detected.
 			Release(lines_global_mtx);
@@ -269,9 +259,8 @@ void back_away_from_can()
 
 void drive_forwards(int n, bool pushing) 
 {
-	error = INIT;
-	integral = INIT;
-	value = INIT;
+	init_pid_variables();
+	
 	Acquire(lines_global_mtx);
 	lines_global = INIT;
 	TextOut(64, LCD_LINE7, "   ");
