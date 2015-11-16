@@ -69,15 +69,15 @@ void init_pid_variables()
 
 void search_for_long_stretches()
 {
-	int k = 0;
-	int j = 0;
-	int i = 0;
+	int i = 0, j = 0, k = 0;
 	for (; i < route_length_raw;) {
 		route_short[k].c = route_raw[i];
 		route_short[k].p = false;
+		route_short[k].n = 0;
 		for (j = i + 1; j < route_length_raw; j++) {
-			if (route_raw[i] != route_raw[j]) {
-				route_short[k].n = j - i;
+			if (route_raw[i] == route_raw[j]) {
+				route_short[k].n++;
+			} else {
 				break;
 			}
 		}
