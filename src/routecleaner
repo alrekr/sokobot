@@ -1,0 +1,15 @@
+#!/bin/bash
+INPUT=/home/alrekr/workspace/git/sokobot/src/route
+i=0
+string="const char route[] = {"
+string2="#define ROUTE_LENGTH"
+while IFS= read -r -n1 c
+do
+	i=$(($i+1))
+	string="$string'$c',"
+
+done < "$INPUT"
+string2="$string2 $i"
+string="$string's'};"
+sed -i "40s/.*/$string/" /home/alrekr/workspace/git/sokobot/src/main.nxc
+sed -i "41s/.*/$string2/" /home/alrekr/workspace/git/sokobot/src/main.nxc
