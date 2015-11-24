@@ -72,7 +72,6 @@ intchar route_short[ROUTE_LENGTH + 1];
 int route_length_raw = INIT;
 int route_length_short = INIT;
 
-//for pid
 int Tp = TP, left = INIT, right = INIT, error = INIT, integral = INIT, 
 		derivative = INIT, turn = INIT, motor_a = INIT, motor_b = INIT, 
 		last_error = INIT;
@@ -168,7 +167,7 @@ void auto_calibrate() // works
 
 		if (left > left_max) {
 			left_max = left;
-			//The outputting works as a little wait function.
+			//The outputting in this function works as a little wait function.
 			TextOut(LCD_POS2, LCD_LINE2, "    ");
 			NumOut(LCD_POS2, LCD_LINE2, left_max);
 		} else if (left < left_min) {
@@ -238,7 +237,7 @@ void pid() // works beautifully
 
 void turn_robot(char direction) // mostly works
 {
-	switch (direction) { //plus is right, negative is left
+	switch (direction) { //plus is left, negative is right
 	case TO_THE_LEFT:
 		OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
 		Wait(FORCE_TURN_TIME);
@@ -330,7 +329,7 @@ void drive_forwards(int n, bool pushing) // pure driving works, pushing not test
 			PlayToneEx(880, 150, SOUND_VOLUME, false);
 			Tp = CAREFUL_SPEED;
 			
-			while (true) { //push the can
+			while (true) {
 				pid();
 				Acquire(lines_global_mtx);
 
@@ -470,7 +469,6 @@ void init_route()
 
 task line_counter() // works
 {
-	// hysteresis based, I hope
 	int last_value = 0, value = 0;
 	TextOut(LCD_POS1, LCD_LINE7, "Lines");
 
@@ -490,8 +488,7 @@ task line_counter() // works
 
 task control() // works
 {
-	//this task will control everything
-	while (SENSOR_4 != 1); //wait for go signal
+	while (SENSOR_4 != 1);
 
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
@@ -506,7 +503,7 @@ task control() // works
 		drive_forwards(route_short[i].n, route_short[i].p);
 		Wait(MECHANIC_WAIT_TIME);
 	}
-	
+
 	done();
 }
 
@@ -524,7 +521,6 @@ task emergency_stop() // works
 
 task main() // works
 {
-	//initialise sensors, read commands, launch tasks (control and line_counter)
 	init_sensors();
 	init_route();
 	auto_calibrate();
