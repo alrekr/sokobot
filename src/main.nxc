@@ -96,10 +96,7 @@ void init_pid_variables() // works, duh. How could it not work?
 
 void search_for_long_stretches() // works
 {
-	int k = 0;
-	int j = 0;
-	int i = 0;
-
+	int i = 0, j = 0, k = 0;
 	for (; i < route_length_raw;) {
 		route_short[k].c = route_raw[i];
 		route_short[k].p = false;
