@@ -40,6 +40,8 @@
 const char route[] = {'u','r','u','l','u','u','l','d','d','d','d','r','s'};
 #define ROUTE_LENGTH 12
 
+#define TURN_ON_DIME 50
+
 struct intchar {
 	int n;
 	char c;
@@ -96,11 +98,13 @@ void init_pid_variables() // works, duh. How could it not work?
 
 void search_for_long_stretches() // works
 {
-	int i = 0, j = 0, k = 0;
+	int i = INIT, j = INIT, k = INIT;
+
 	for (; i < route_length_raw;) {
 		route_short[k].c = route_raw[i];
 		route_short[k].p = false;
-		route_short[k].n = 0;
+		route_short[k].n = INIT;
+
 		for (j = i; j < route_length_raw; j++) {
 			if (route_raw[i] == route_raw[j]) {
 				route_short[k].n++;
@@ -108,6 +112,7 @@ void search_for_long_stretches() // works
 				break;
 			}
 		}
+
 		i = j;
 		k++;
 	}
@@ -117,7 +122,7 @@ void search_for_long_stretches() // works
 
 void search_for_pushes() // works
 {
-	for (int i = 0; i < route_length_short; i++) {
+	for (int i = INIT; i < route_length_short; i++) {
 		if (route_short[i].c == 'U' || route_short[i].c == 'D' ||
 			route_short[i].c == 'L' || route_short[i].c == 'R') {
 			route_short[i].p = true;
@@ -128,7 +133,8 @@ void search_for_pushes() // works
 void prepare_route() // works
 {
 	char val;
-	for (int i = 0; i < ROUTE_LENGTH + 1; i++) {
+
+	for (int i = INIT; i < ROUTE_LENGTH + 1; i++) {
 		val = route[i];
 		if (val != 'u' && val != 'U' && val != 'd' && val != 'D' &&
 			val != 'r' && val != 'R' && val != 'l' && val != 'L') {
@@ -146,7 +152,7 @@ void auto_calibrate() // works
 	int left, right, back;
 	int left_max = INIT, right_max = INIT, back_max = INIT;
 	int left_min = 1024, right_min = 1024, back_min = 1024;
-	OnRevSync(OUT_AC, CALIBRATION_TURN_SPEED, 50);
+	OnRevSync(OUT_AC, CALIBRATION_TURN_SPEED, TURN_ON_DIME);
 
 	TextOut(LCD_POS1, LCD_LINE1, "L, min");
 	TextOut(LCD_POS1, LCD_LINE2, "L, max");
@@ -155,7 +161,6 @@ void auto_calibrate() // works
 	TextOut(LCD_POS1, LCD_LINE7, "B, min");
 	TextOut(LCD_POS1, LCD_LINE8, "B, max");
 
-	//perform sampling ...
 	for (int i = 0; i < CALIBRATION_TURN_TIME; i++) {
 		left = SENSOR_1;
 		right = SENSOR_2;
@@ -166,43 +171,38 @@ void auto_calibrate() // works
 			//The outputting works as a little wait function.
 			TextOut(LCD_POS2, LCD_LINE2, "    ");
 			NumOut(LCD_POS2, LCD_LINE2, left_max);
-			// PlayToneEx(880, 40, SOUND_VOLUME, false);
 		} else if (left < left_min) {
 			left_min = left;
 			TextOut(LCD_POS2, LCD_LINE1, "    ");
 			NumOut(LCD_POS2, LCD_LINE1, left_min);
-			// PlayToneEx(880, 40, SOUND_VOLUME, false);
 		}
 		
 		if (right > right_max) {
 			right_max = right;
 			TextOut(LCD_POS2, LCD_LINE5, "    ");
 			NumOut(LCD_POS2, LCD_LINE5, right_max);
-			// PlayToneEx(880, 40, SOUND_VOLUME, false);
 		} else if (right < right_min) {
 			right_min = right;
 			TextOut(LCD_POS2, LCD_LINE4, "    ");
 			NumOut(LCD_POS2, LCD_LINE4, right_min);
-			// PlayToneEx(880, 40, SOUND_VOLUME, false);
 		}
 		
 		if (back > back_max) {
 			back_max = back;
 			TextOut(LCD_POS2, LCD_LINE8, "    ");
 			NumOut(LCD_POS2, LCD_LINE8, back_max);
-			// PlayToneEx(880, 40, SOUND_VOLUME, false);
 		} else if (back < back_min) {
 			back_min = back;
 			TextOut(LCD_POS2, LCD_LINE7, "    ");
 			NumOut(LCD_POS2, LCD_LINE7, back_min);
-			// PlayToneEx(880, 40, SOUND_VOLUME, false);
 		}
 		Wait(4); // Ensures that the robot takes at least 4 ms * 1660 = 6.64 s to perform sampling, ensures at least a complete revolution
 	}
 
 	PlayToneEx(6000, 250, SOUND_VOLUME, false);
-	ClearScreen();
 	Off(OUT_AC);
+	ClearScreen();
+
 	left_gain = 100.0 / (left_max - left_min);
 	right_gain = 100.0 / (right_max - right_min);
 	back_gain = 100.0 / (back_max - back_min);
@@ -240,33 +240,39 @@ void turn_robot(char direction) // mostly works
 {
 	switch (direction) { //plus is right, negative is left
 	case TO_THE_LEFT:
-		OnFwdSync(OUT_AC, TURN_SPEED, -50);
+		OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
 		Wait(FORCE_TURN_TIME);
+
 		while (true) {
 			if (LEFT_SENSOR < BLACK_THRESHOLD) {
 				break;
 			}
 		}
+
 		break;
 	case TO_THE_RIGHT:
-		OnFwdSync(OUT_AC, TURN_SPEED, 50);
+		OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
 		Wait(FORCE_TURN_TIME);
+
 		while (true) {
 			if (RIGHT_SENSOR < BLACK_THRESHOLD) {
 				break;
 			}
 		}
+
 		break;
 	case AROUND:
 		int right_last = 0, left_last = 0;
 		int c = 0, k = 0;
-		OnFwdSync(OUT_AC, TURN_SPEED, 50);
+		OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
 		Wait(FORCE_TURN_TIME);
+
 		while (true) {
 			right_last = right;
 			left_last = left;
 			right = RIGHT_SENSOR;
 			left = LEFT_SENSOR;
+
 			if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD && c == 0) {
 				c++;
 			} else if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD && c == 1) {
@@ -284,9 +290,8 @@ void back_away_from_can(bool pushing) //mostly work
 {
 	Tp = CAREFUL_SPEED;
 	init_pid_variables();
-
 	int local_line = 0;
-	OnFwdSync(OUT_AC, FAST_SPEED, 0); //back up
+	OnFwdSync(OUT_AC, FAST_SPEED, 0);
 	Wait(330);
 	Off(OUT_AC);
 	turn_robot(AROUND);
@@ -294,16 +299,19 @@ void back_away_from_can(bool pushing) //mostly work
 	Acquire(lines_global_mtx);
 	local_line = lines_global;
 	Release(lines_global_mtx);
-	while (true) { //drive forwards until on intersection
-		pid();
 
+	while (true) {
+		pid();
 		Acquire(lines_global_mtx);
-		if (local_line != lines_global) { //line detected.
+
+		if (local_line != lines_global) {
 			Release(lines_global_mtx);
 			break;
 		}
+
 		Release(lines_global_mtx);
 	}
+
 	Off(OUT_AC);
 }
 
@@ -320,46 +328,43 @@ void drive_forwards(int n, bool pushing) // pure driving works, pushing not test
 	if (pushing == true) {
 		if (n <= 2) {
 			PlayToneEx(880, 150, SOUND_VOLUME, false);
-			//drive carefully forwards, search with the two front sensors for the line
-			//back up until the back sensor finds the line, return
 			Tp = CAREFUL_SPEED;
 			
 			while (true) { //push the can
 				pid();
-
 				Acquire(lines_global_mtx);
+
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD
 					&& lines_global == n - 1) { 
 					Release(lines_global_mtx);
-				//maybe the line detection should be smarter than a simple thresholding
 					break;
 				}
+
 				Release(lines_global_mtx);
 			}
+
 			Off(OUT_AC);
 			Wait(FORCE_TURN_TIME);
 			back_away_from_can(pushing);
 			PlayToneEx(880, 350, SOUND_VOLUME, false);
 		} else if (n > 2) {
 			PlayToneEx(988, 150, SOUND_VOLUME, false);
-			//drive fast forwards, BOLO for next-to-last line
-			//drive carefully to the last line, search with the two front sensors
-			//back up until the back sensor finds the line, return
 			Tp = FAST_SPEED;
 			
-			while (true) { //control until next-to-last line reached.
+			while (true) {
 				pid();
-
 				Acquire(lines_global_mtx);
+
 				if (lines_global == (n - 1)) {
 					Release(lines_global_mtx);
 					Tp = CAREFUL_SPEED;
 					break;
 				}
+
 				Release(lines_global_mtx);
 			}
 
-			while (true) { //control until last line reached - currently based on front sensors
+			while (true) {
 				pid();
 
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD) {
@@ -368,21 +373,20 @@ void drive_forwards(int n, bool pushing) // pure driving works, pushing not test
 				}
 			}
 
-			Wait(MECHANIC_WAIT_TIME); //make sure the robot stopped completely. Otherwise, wobbly start.
+			Wait(MECHANIC_WAIT_TIME);
 			back_away_from_can(pushing);
 			PlayToneEx(988, 350, SOUND_VOLUME, false);
 		}
 	} else if (pushing == false) {
 		if (n == 1) {
 			PlayToneEx(1047, 150, SOUND_VOLUME, false);
-			//drive carefully forwards, return when line is reached with back sensor
 			Tp = CAREFUL_SPEED;
 			Acquire(lines_global_mtx);
 			lines_global = INIT;
 			Release(lines_global_mtx);
+
 			while (true) {
 				pid();
-
 				Acquire(lines_global_mtx);
 
 				if (lines_global == n) {
@@ -392,22 +396,21 @@ void drive_forwards(int n, bool pushing) // pure driving works, pushing not test
 
 				Release(lines_global_mtx);
 			}
+
 			Off(OUT_AC);
 			PlayToneEx(1047, 350, SOUND_VOLUME, false);
 		} else if (n > 1) {
 			PlayToneEx(1175, 150, SOUND_VOLUME, false);
-			//drive fast forwards, BOLO for next-to-last line
-			//drive carefully forwards, return when line is reached with back sensor
 			Tp = FAST_SPEED;
 			bool once_flag = false;
 			Acquire(lines_global_mtx);
 			lines_global = INIT;
 			Release(lines_global_mtx);
 			
-			while (true) { //control until last line reached.
+			while (true) {
 				pid();
-
 				Acquire(lines_global_mtx);
+
 				if (lines_global == (n - 1) && once_flag == false) {
 					Release(lines_global_mtx);
 					Tp = CAREFUL_SPEED;
@@ -420,6 +423,7 @@ void drive_forwards(int n, bool pushing) // pure driving works, pushing not test
 			
 				Release(lines_global_mtx);
 			}
+
 			PlayToneEx(1175, 350, SOUND_VOLUME, false);
 		}
 	}
@@ -453,6 +457,7 @@ void desired_orientation(char desired) // works
 				(orientation == RIGHT && desired == UP))   {
 		turn_robot(TO_THE_LEFT);
 	}
+
 	orientation = tolower(desired);
 }
 
@@ -472,6 +477,7 @@ task line_counter() // works
 	while (true) {
 		last_value = value;
 		value = BACK_SENSOR;
+
 		if (last_value > BLACK_THRESHOLD && value <= BLACK_THRESHOLD) {
 			Acquire(lines_global_mtx);
 			lines_global++;
@@ -486,17 +492,21 @@ task control() // works
 {
 	//this task will control everything
 	while (SENSOR_4 != 1); //wait for go signal
+
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
+
 	for (int i = 0; i < route_length_short + 2; i++) {
 		if (route_short[i].c == 's') {
 			break;
 		}
+
 		desired_orientation(tolower(route_short[i].c));
 		Wait(MECHANIC_WAIT_TIME);
 		drive_forwards(route_short[i].n, route_short[i].p);
 		Wait(MECHANIC_WAIT_TIME);
 	}
+	
 	done();
 }
 
