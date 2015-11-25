@@ -19,8 +19,6 @@
 
 #define CALIBRATION_TURN_TIME 10000
 
-#define ROUTE_NAME "sokoban_route.txt"
-
 #define UP 'u'
 #define DOWN 'd'
 #define LEFT 'l'

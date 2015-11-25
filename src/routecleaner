@@ -9,7 +9,7 @@ do
 	string="$string'$c',"
 
 done < "$INPUT"
-string2="$string2 $i"
 string="$string's'};"
+string2="$string2 $i"
 sed -i "40s/.*/$string/" /home/alrekr/workspace/git/sokobot/src/main.nxc
 sed -i "41s/.*/$string2/" /home/alrekr/workspace/git/sokobot/src/main.nxc

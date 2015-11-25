@@ -1,0 +1,47 @@
+
+int lines_local;
+bool do_exit = false;
+Acquire(lines_global_mtx);
+lines_global = INIT;
+Release(lines_global_mtx);
+
+while (true) {
+	switch (n) {
+		case 0:
+			if (pushing == true) {
+
+			} else {
+				do_exit = true;
+				break;
+			}
+		case 1:
+			Tp = CAREFUL_SPEED;
+
+		case 2:
+			if (pushing == true) {
+				Tp = CAREFUL_SPEED;
+			} else {
+				Tp = FAST_SPEED;
+			}
+			pid();
+			break;
+		default:
+			Tp = FAST_SPEED;
+			pid();
+			break;
+	}
+
+	if (do_exit == true) {
+		break;
+	}
+
+	Acquire(lines_global_mtx);
+	
+	if (lines_local != lines_global) {
+		lines_local = lines_global;
+		Release(lines_global_mtx);
+		--n;
+	}
+
+	Release(lines_global_mtx);
+}
