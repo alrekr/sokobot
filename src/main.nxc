@@ -9,7 +9,7 @@
 #define AROUND 'a'
 
 #define FORCE_TURN_TIME 350
-#define MECHANIC_WAIT_TIME 200
+#define MECHANIC_WAIT_TIME 100
 
 #define KP 12.0
 #define KI 0.0 // was: 0.5
@@ -67,6 +67,7 @@ float right_gain = INIT;
 float back_gain = INIT;
 
 char orientation = UP;
+char last_orientation = orientation;
 
 char route_raw[ROUTE_LENGTH + 1];
 intchar route_short[ROUTE_LENGTH + 1];
@@ -218,7 +219,7 @@ void auto_calibrate() // works
 	Acquire(motor_control_mtx);
 	Off(OUT_AC);
 	Release(motor_control_mtx);
-	//ClearScreen();
+	ClearScreen();
 
 	left_gain = 100.0 / (left_max - left_min);
 	right_gain = 100.0 / (right_max - right_min);
@@ -361,11 +362,11 @@ void desired_orientation(char desired, bool pushing) // works
 				(orientation == RIGHT && desired == UP))   {
 		turn_robot(TO_THE_LEFT, pushing);
 	}
-
+	last_orientation = orientation;
 	orientation = tolower(desired);
 }
 
-void back_away_from_can(bool pushing) //mostly work
+void back_away_from_can(bool pushing) // works
 {
 	Tp = CAREFUL_SPEED;
 	init_pid_variables();
@@ -427,7 +428,7 @@ void drive_forwards(int n, bool pushing) // mostly works
 	
 	if (pushing == true) {
 		if (n <= 2) {
-			PlayToneEx(880, 150, SOUND_VOLUME, false);
+			// PlayToneEx(880, 150, SOUND_VOLUME, false);
 			Tp = CAREFUL_SPEED;
 			
 			while (true) {
@@ -469,9 +470,9 @@ void drive_forwards(int n, bool pushing) // mostly works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-			PlayToneEx(880, 350, SOUND_VOLUME, false);
+			// PlayToneEx(880, 350, SOUND_VOLUME, false);
 		} else if (n > 2) {
-			PlayToneEx(988, 150, SOUND_VOLUME, false);
+			// PlayToneEx(988, 150, SOUND_VOLUME, false);
 			Tp = FAST_SPEED;
 			
 			while (true) {
@@ -522,11 +523,11 @@ void drive_forwards(int n, bool pushing) // mostly works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-			PlayToneEx(988, 350, SOUND_VOLUME, false);
+			// PlayToneEx(988, 350, SOUND_VOLUME, false);
 		}
 	} else if (pushing == false) {
 		if (n == 1) {
-			PlayToneEx(1047, 150, SOUND_VOLUME, false);
+			// PlayToneEx(1047, 150, SOUND_VOLUME, false);
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
 			Acquire(lines_global_mtx);
@@ -548,9 +549,9 @@ void drive_forwards(int n, bool pushing) // mostly works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-			PlayToneEx(1047, 350, SOUND_VOLUME, false);
+			// PlayToneEx(1047, 350, SOUND_VOLUME, false);
 		} else if (n > 1) {
-			PlayToneEx(1175, 150, SOUND_VOLUME, false);
+			// PlayToneEx(1175, 150, SOUND_VOLUME, false);
 			Tp = FAST_SPEED;
 			bool once_flag = false;
 			Acquire(lines_global_mtx);
@@ -576,7 +577,7 @@ void drive_forwards(int n, bool pushing) // mostly works
 				Release(lines_global_mtx);
 			}
 
-			PlayToneEx(1175, 350, SOUND_VOLUME, false);
+			// PlayToneEx(1175, 350, SOUND_VOLUME, false);
 		}
 	}
 }
@@ -648,7 +649,10 @@ task emergency_stop() // works
 			string string2 = " !!!! STOP !!!";
 			string to_out1;
 			string to_out2;
-
+			TextOut(LCD_POS1, LCD_LINE1, "Orientation");
+			TextOut(LCD_POS1, LCD_LINE2, orientation);
+			TextOut(LCD_POS1, LCD_LINE4, "Last orientation");
+			TextOut(LCD_POS1, LCD_LINE5, last_orientation);
 			for (int i = 0; i < 20; i++) {
 				if (i % 2 == 0) {
 					un_sensor();
