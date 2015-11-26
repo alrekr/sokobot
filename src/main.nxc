@@ -21,7 +21,7 @@
 #define LCD_POS2 64
 
 #define INIT 0
-#define BLACK_THRESHOLD 20 // was: 30
+#define BLACK_THRESHOLD 30 // was: 30
 #define CAREFUL_SPEED 80
 #define FAST_SPEED 90
 #define SPEED_LIMIT 99
@@ -37,8 +37,8 @@
 #define LEFT 'l'
 #define RIGHT 'r'
 // Edit file >route< to change the route and run >routecleaner< script using Ctrl+Alt+G. DO NOT CHANGE LINE NUMBERS!
-const char route[] = {'r','d','d','d','l','l','l','L','U','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','l','l','d','R','R','d','l','d','l','l','u','L','u','u','l','l','d','R','u','r','D','D','u','l','l','D','R','d','R','R','R','d','r','U','U','r','u','u','r','r','d','L','u','l','D','u','l','l','d','R','d','d','l','l','l','l','u','u','r','D','l','d','R','R','R','d','r','U','U','U','l','u','R','d','d','d','l','l','l','l','d','l','l','u','R','R','R','R','R','d','r','U','U','s'};
-#define ROUTE_LENGTH 119
+const char route[] = {'d','D','s'};
+#define ROUTE_LENGTH 2
 
 #define TURN_ON_DIME 50
 
@@ -168,7 +168,9 @@ void auto_calibrate() // works
 	int left_max = INIT, right_max = INIT, back_max = INIT;
 	int left_min = 1024, right_min = 1024, back_min = 1024;
 	Acquire(motor_control_mtx);
-	OnRevSync(OUT_AC, CALIBRATION_TURN_SPEED, TURN_ON_DIME);
+	OnFwd(OUT_A, CALIBRATION_TURN_SPEED);
+	OnRev(OUT_C, CALIBRATION_TURN_SPEED);
+	// OnRevSync(OUT_AC, CALIBRATION_TURN_SPEED, TURN_ON_DIME);
 	Release(motor_control_mtx);
 
 	TextOut(LCD_POS1, LCD_LINE1, "L, min");
@@ -456,17 +458,17 @@ void drive_forwards(int n, bool pushing) // mostly works
 			lines_global = INIT;
 			Release(lines_global_mtx);
 
-			while (true) {
-				pid();
-				Acquire(lines_global_mtx);
+			// while (true) {
+			// 	pid();
+			// 	Acquire(lines_global_mtx);
 
-				if (lines_global == 1) {
-					Release(lines_global_mtx);
-					break;
-				}
+			// 	if (lines_global == 1) {
+			// 		Release(lines_global_mtx);
+			// 		break;
+			// 	}
 
-				Release(lines_global_mtx);
-			}
+			// 	Release(lines_global_mtx);
+			// }
 
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
@@ -600,6 +602,79 @@ void init_route()
 	search_for_pushes();
 }
 
+void print_orientation()
+{
+	TextOut(LCD_POS1, LCD_LINE1, "Orientation");
+	if(islower(route_short[route_position].c)){
+		switch(orientation) {
+			case UP:
+			TextOut(LCD_POS1, LCD_LINE2, "up");
+			break;
+			case DOWN:
+			TextOut(LCD_POS1, LCD_LINE2, "down");
+			break;
+			case RIGHT:
+			TextOut(LCD_POS1, LCD_LINE2, "right");
+			break;
+			case LEFT:
+			TextOut(LCD_POS1, LCD_LINE2, "left");
+			break;
+		}
+	} else {
+		switch(orientation) {
+			case UP:
+			TextOut(LCD_POS1, LCD_LINE2, "UP");
+			break;
+			case DOWN:
+			TextOut(LCD_POS1, LCD_LINE2, "DOWN");
+			break;
+			case RIGHT:
+			TextOut(LCD_POS1, LCD_LINE2, "RIGHT");
+			break;
+			case LEFT:
+			TextOut(LCD_POS1, LCD_LINE2, "LEFT");
+			break;
+		}
+		
+	}
+}
+
+void print_last_orientation()
+{
+	TextOut(LCD_POS1, LCD_LINE4, "Last orientation");
+	if(islower(route_short[route_position].c)){
+		switch(last_orientation) {
+			case UP:
+			TextOut(LCD_POS1, LCD_LINE5, "up");
+			break;
+			case DOWN:
+			TextOut(LCD_POS1, LCD_LINE5, "down");
+			break;
+			case RIGHT:
+			TextOut(LCD_POS1, LCD_LINE5, "right");
+			break;
+			case LEFT:
+			TextOut(LCD_POS1, LCD_LINE5, "left");
+			break;
+		}
+	} else {
+		switch(last_orientation) {
+			case UP:
+			TextOut(LCD_POS1, LCD_LINE5, "UP");
+			break;
+			case DOWN:
+			TextOut(LCD_POS1, LCD_LINE5, "DOWN");
+			break;
+			case RIGHT:
+			TextOut(LCD_POS1, LCD_LINE5, "RIGHT");
+			break;
+			case LEFT:
+			TextOut(LCD_POS1, LCD_LINE5, "LEFT");
+			break;
+		}
+	}
+}
+
 task line_counter() // works
 {
 	int last_value = 0, value = 0;
@@ -625,13 +700,16 @@ task control() // works
 
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
-
 	for (route_position = 0; route_position < route_length_short + 2; route_position++) {
 		if (route_short[route_position].c == 's') {
 			break;
 		}
 
+		ClearScreen();
 		desired_orientation(tolower(route_short[route_position].c), route_short[route_position].p);
+		// Wait(MECHANIC_WAIT_TIME);
+		print_orientation();
+
 		Wait(MECHANIC_WAIT_TIME);
 		drive_forwards(route_short[route_position].n, route_short[route_position].p);
 		Wait(MECHANIC_WAIT_TIME);
@@ -651,34 +729,8 @@ task emergency_stop() // works
 			string to_out1;
 			string to_out2;
 			ClearScreen();
-			switch(orientation) {
-				case UP:
-				TextOut(LCD_POS1, LCD_LINE2, "UP");
-				break;
-				case DOWN:
-				TextOut(LCD_POS1, LCD_LINE2, "DOWN");
-				break;
-				case RIGHT:
-				TextOut(LCD_POS1, LCD_LINE2, "RIGHT");
-				break;
-				case LEFT:
-				TextOut(LCD_POS1, LCD_LINE2, "LEFT");
-				break;
-			}
-			switch(last_orientation) {
-				case UP:
-				TextOut(LCD_POS1, LCD_LINE5, "UP");
-				break;
-				case DOWN:
-				TextOut(LCD_POS1, LCD_LINE5, "DOWN");
-				break;
-				case RIGHT:
-				TextOut(LCD_POS1, LCD_LINE5, "RIGHT");
-				break;
-				case LEFT:
-				TextOut(LCD_POS1, LCD_LINE5, "LEFT");
-				break;
-			}
+			print_orientation();
+			print_last_orientation();
 			TextOut(LCD_POS1, LCD_LINE7, "Count:");
 			NumOut(LCD_POS1, LCD_LINE8, route_position);
 			for (int i = 0; i < 20; i++) {
