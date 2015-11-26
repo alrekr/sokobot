@@ -9,7 +9,7 @@
 #define AROUND 'a'
 
 #define FORCE_TURN_TIME 350
-#define MECHANIC_WAIT_TIME 250
+#define MECHANIC_WAIT_TIME 200
 
 #define KP 12.0
 #define KI 0.0 // was: 0.5
@@ -21,7 +21,7 @@
 #define LCD_POS2 64
 
 #define INIT 0
-#define BLACK_THRESHOLD 30
+#define BLACK_THRESHOLD 20 // was: 30
 #define CAREFUL_SPEED 80
 #define FAST_SPEED 90
 #define SPEED_LIMIT 99
@@ -307,7 +307,7 @@ void turn_robot(char direction, bool pushing) // mostly works
 			}
 		}
 
-		if (pushing == true) {
+		if (pushing == false) {
 			while (true) {
 				right_last = right;
 				left_last = left;
