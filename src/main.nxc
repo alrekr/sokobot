@@ -67,12 +67,13 @@ float right_gain = INIT;
 float back_gain = INIT;
 
 char orientation = UP;
-char last_orientation = orientation;
+char last_orientation = UP;
 
 char route_raw[ROUTE_LENGTH + 1];
 intchar route_short[ROUTE_LENGTH + 1];
 int route_length_raw = INIT;
 int route_length_short = INIT;
+int route_position = INIT;
 
 int Tp = TP, left = INIT, right = INIT, error = INIT, integral = INIT, 
 		derivative = INIT, turn = INIT, motor_a = INIT, motor_b = INIT, 
@@ -625,14 +626,14 @@ task control() // works
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
 
-	for (int i = 0; i < route_length_short + 2; i++) {
-		if (route_short[i].c == 's') {
+	for (route_position = 0; route_position < route_length_short + 2; route_position++) {
+		if (route_short[route_position].c == 's') {
 			break;
 		}
 
-		desired_orientation(tolower(route_short[i].c), route_short[i].p);
+		desired_orientation(tolower(route_short[route_position].c), route_short[route_position].p);
 		Wait(MECHANIC_WAIT_TIME);
-		drive_forwards(route_short[i].n, route_short[i].p);
+		drive_forwards(route_short[route_position].n, route_short[route_position].p);
 		Wait(MECHANIC_WAIT_TIME);
 	}
 
@@ -649,10 +650,37 @@ task emergency_stop() // works
 			string string2 = " !!!! STOP !!!";
 			string to_out1;
 			string to_out2;
-			TextOut(LCD_POS1, LCD_LINE1, "Orientation");
-			TextOut(LCD_POS1, LCD_LINE2, orientation);
-			TextOut(LCD_POS1, LCD_LINE4, "Last orientation");
-			TextOut(LCD_POS1, LCD_LINE5, last_orientation);
+			ClearScreen();
+			switch(orientation) {
+				case UP:
+				TextOut(LCD_POS1, LCD_LINE2, "UP");
+				break;
+				case DOWN:
+				TextOut(LCD_POS1, LCD_LINE2, "DOWN");
+				break;
+				case RIGHT:
+				TextOut(LCD_POS1, LCD_LINE2, "RIGHT");
+				break;
+				case LEFT:
+				TextOut(LCD_POS1, LCD_LINE2, "LEFT");
+				break;
+			}
+			switch(last_orientation) {
+				case UP:
+				TextOut(LCD_POS1, LCD_LINE5, "UP");
+				break;
+				case DOWN:
+				TextOut(LCD_POS1, LCD_LINE5, "DOWN");
+				break;
+				case RIGHT:
+				TextOut(LCD_POS1, LCD_LINE5, "RIGHT");
+				break;
+				case LEFT:
+				TextOut(LCD_POS1, LCD_LINE5, "LEFT");
+				break;
+			}
+			TextOut(LCD_POS1, LCD_LINE7, "Count:");
+			NumOut(LCD_POS1, LCD_LINE8, route_position);
 			for (int i = 0; i < 20; i++) {
 				if (i % 2 == 0) {
 					un_sensor();
