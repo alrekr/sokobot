@@ -8,10 +8,11 @@
 #define TO_THE_RIGHT RIGHT
 #define AROUND 'a'
 
-#define FORCE_TURN_TIME 350
+#define FORCE_TURN_TIME 250
+
 #define MECHANIC_WAIT_TIME 100
 
-#define KP 12.0
+#define KP 30.0
 #define KI 0.0 // was: 0.5
 #define KD 0.0 // was: 0.9
 #define TP 30.0
@@ -19,17 +20,16 @@
 
 #define LCD_POS1 0
 #define LCD_POS2 64
-
 #define INIT 0
-#define BLACK_THRESHOLD 30 // was: 30
-#define CAREFUL_SPEED 80
-#define FAST_SPEED 90
+#define BLACK_THRESHOLD 10 // was: 30
+#define CAREFUL_SPEED 90
+#define FAST_SPEED 95
 #define SPEED_LIMIT 99
 #define MIN_SPEED 50
-#define TURN_SPEED 85
-#define REALLY_SLOW_TURN_SPEED 40
+#define TURN_SPEED 75 // was: 85
+#define REALLY_SLOW_TURN_SPEED 85 // was: 40
 #define CALIBRATION_TURN_SPEED 40
-#define CALIBRATION_TURN_TIME 1660
+#define CALIBRATION_TURN_TIME 840 // was: 1660
 #define BACK_UP_TIME 330
 
 #define UP 'u'
@@ -37,8 +37,8 @@
 #define LEFT 'l'
 #define RIGHT 'r'
 // Edit file >route< to change the route and run >routecleaner< script using Ctrl+Alt+G. DO NOT CHANGE LINE NUMBERS!
-const char route[] = {'d','D','s'};
-#define ROUTE_LENGTH 2
+const char route[] = {'d','d','U','U','s'};
+#define ROUTE_LENGTH 4
 
 #define TURN_ON_DIME 50
 
@@ -73,11 +73,13 @@ char route_raw[ROUTE_LENGTH + 1];
 intchar route_short[ROUTE_LENGTH + 1];
 int route_length_raw = INIT;
 int route_length_short = INIT;
-int route_position = INIT;
+int rt_pos = INIT;
 
 int Tp = TP, left = INIT, right = INIT, error = INIT, integral = INIT, 
 		derivative = INIT, turn = INIT, motor_a = INIT, motor_b = INIT, 
 		last_error = INIT;
+
+bool all_done = false;
 
 void init_sensors() // works
 {
@@ -268,7 +270,9 @@ void turn_robot(char direction, bool pushing) // mostly works
 	switch (direction) { //plus is left, negative is right
 	case TO_THE_LEFT:
 		Acquire(motor_control_mtx);
-		OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
+		OnFwd(OUT_A, TURN_SPEED);
+		OnRev(OUT_C, TURN_SPEED);
+		// OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
 
@@ -281,7 +285,9 @@ void turn_robot(char direction, bool pushing) // mostly works
 		break;
 	case TO_THE_RIGHT:
 		Acquire(motor_control_mtx);
-		OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
+		OnRev(OUT_A, TURN_SPEED);
+		OnFwd(OUT_C, TURN_SPEED);
+		// OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
 
@@ -292,63 +298,69 @@ void turn_robot(char direction, bool pushing) // mostly works
 		}
 
 		break;
-	case AROUND: // this might not work
-		int right_last = 0, left_last = 0;
-		int c = 0, k = 0;
+	case AROUND: 
+		int left_last = 0;
+		int c = 0;
+		Acquire(lines_global_mtx);
+		int local_line = lines_global;
+		Release(lines_global_mtx);
 		Acquire(motor_control_mtx);
-		OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);		
+		OnRev(OUT_A, TURN_SPEED);
+		OnFwd(OUT_C, TURN_SPEED);
+		// OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);		
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
 
 		while (true) {
-			right_last = right;
 			left_last = left;
-			right = RIGHT_SENSOR;
 			left = LEFT_SENSOR;
 
-			if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD) {
+			if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD && pushing == true) {
 				break;
 			}
-		}
 
-		if (pushing == false) {
-			while (true) {
-				right_last = right;
-				left_last = left;
-				right = RIGHT_SENSOR;
-				left = LEFT_SENSOR;
+			Acquire(lines_global_mtx);
 
-				if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD) {
-					break;
-				}
+			if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD 
+				&& pushing == false && local_line + 2 == lines_global) {
+				Release(lines_global_mtx);
+				break;
 			}
+
+			Release(lines_global_mtx);
 		}
-	default:
 		break;
 	}
 	
 	switch(direction) {
 	case TO_THE_LEFT:
 		Acquire(motor_control_mtx);
-		OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, -TURN_ON_DIME);
+		OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
+		OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
+		// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, TURN_ON_DIME);
 		Release(motor_control_mtx);
+		while (RIGHT_SENSOR < BLACK_THRESHOLD);
 		break;
 	case TO_THE_RIGHT:
-	default:
+	case AROUND:
 		Acquire(motor_control_mtx);
-		OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, TURN_ON_DIME);
+		OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
+		OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
+		// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, -TURN_ON_DIME);
 		Release(motor_control_mtx);
+		while (LEFT_SENSOR < BLACK_THRESHOLD);
 		break;
 	}
 
-	while (BACK_SENSOR < BLACK_THRESHOLD);
 	Acquire(motor_control_mtx);
 	Off(OUT_AC);
 	Release(motor_control_mtx);
 }
 
-void desired_orientation(char desired, bool pushing) // works
+bool desired_orientation(char desired, bool pushing) // works
 {
+	bool orientation_changed = true;
+	
 	if ((orientation == UP    && desired == DOWN)  ||
 		(orientation == DOWN  && desired == UP)    ||
 		(orientation == LEFT  && desired == RIGHT) || 
@@ -365,37 +377,54 @@ void desired_orientation(char desired, bool pushing) // works
 				(orientation == RIGHT && desired == UP))   {
 		turn_robot(TO_THE_LEFT, pushing);
 	}
+	if (tolower(orientation) == tolower(desired)) {
+		orientation_changed = false;
+	}
+
 	last_orientation = orientation;
 	orientation = tolower(desired);
+
+
+	return orientation_changed;
 }
 
 void back_away_from_can(bool pushing) // works
 {
 	Tp = CAREFUL_SPEED;
-	init_pid_variables();
-	Acquire(motor_control_mtx);
+	bool dump;
 	int local_line = 0;
+	init_pid_variables();
+	
+	Acquire(motor_control_mtx);
 	OnFwdSync(OUT_AC, FAST_SPEED, 0);
 	Release(motor_control_mtx);
+	
 	Wait(BACK_UP_TIME);
+	
 	Acquire(motor_control_mtx);
 	Off(OUT_AC);
 	Release(motor_control_mtx);
 	
+	// PlayToneEx(1760, 500, SOUND_VOLUME, false);
+	// Wait(1000);
+	
 	switch(orientation) {
 		case UP:
-		desired_orientation(DOWN, pushing);
+		dump = desired_orientation(DOWN, pushing);
 		break;
 		case DOWN:
-		desired_orientation(UP, pushing);
+		dump = desired_orientation(UP, pushing);
 		break;
 		case RIGHT:
-		desired_orientation(LEFT, pushing);
+		dump = desired_orientation(LEFT, pushing);
 		break;
 		case LEFT:
-		desired_orientation(RIGHT, pushing);
+		dump = desired_orientation(RIGHT, pushing);
 		break;
 	}
+	
+	// PlayToneEx(1760, 500, SOUND_VOLUME, false);
+	// Wait(1000);
 
 	Wait(MECHANIC_WAIT_TIME);
 	Acquire(lines_global_mtx);
@@ -419,19 +448,16 @@ void back_away_from_can(bool pushing) // works
 	Release(motor_control_mtx);
 }
 
-void drive_forwards(int n, bool pushing) // mostly works
+void drive_forwards(int n, bool pushing) // works
 {
 	init_pid_variables();
 
 	Acquire(lines_global_mtx);
 	lines_global = INIT;
-	//TextOut(LCD_POS2, LCD_LINE7, "   ");
-	//NumOut(LCD_POS2, LCD_LINE7, lines_global);
 	Release(lines_global_mtx);
 	
 	if (pushing == true) {
 		if (n <= 2) {
-			// PlayToneEx(880, 150, SOUND_VOLUME, false);
 			Tp = CAREFUL_SPEED;
 			
 			while (true) {
@@ -450,32 +476,20 @@ void drive_forwards(int n, bool pushing) // mostly works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
+
 			Wait(FORCE_TURN_TIME);
 			back_away_from_can(pushing);
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
+
 			Acquire(lines_global_mtx);
 			lines_global = INIT;
 			Release(lines_global_mtx);
 
-			// while (true) {
-			// 	pid();
-			// 	Acquire(lines_global_mtx);
-
-			// 	if (lines_global == 1) {
-			// 		Release(lines_global_mtx);
-			// 		break;
-			// 	}
-
-			// 	Release(lines_global_mtx);
-			// }
-
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-			// PlayToneEx(880, 350, SOUND_VOLUME, false);
 		} else if (n > 2) {
-			// PlayToneEx(988, 150, SOUND_VOLUME, false);
 			Tp = FAST_SPEED;
 			
 			while (true) {
@@ -526,11 +540,9 @@ void drive_forwards(int n, bool pushing) // mostly works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-			// PlayToneEx(988, 350, SOUND_VOLUME, false);
 		}
 	} else if (pushing == false) {
 		if (n == 1) {
-			// PlayToneEx(1047, 150, SOUND_VOLUME, false);
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
 			Acquire(lines_global_mtx);
@@ -552,9 +564,7 @@ void drive_forwards(int n, bool pushing) // mostly works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-			// PlayToneEx(1047, 350, SOUND_VOLUME, false);
 		} else if (n > 1) {
-			// PlayToneEx(1175, 150, SOUND_VOLUME, false);
 			Tp = FAST_SPEED;
 			bool once_flag = false;
 			Acquire(lines_global_mtx);
@@ -579,8 +589,6 @@ void drive_forwards(int n, bool pushing) // mostly works
 			
 				Release(lines_global_mtx);
 			}
-
-			// PlayToneEx(1175, 350, SOUND_VOLUME, false);
 		}
 	}
 }
@@ -595,17 +603,17 @@ void done() // works
 	Wait(150);
 }
 
-void init_route() 
+void init_route() // works
 {
 	prepare_route();
 	search_for_long_stretches();
 	search_for_pushes();
 }
 
-void print_orientation()
+void print_orientation() // works
 {
 	TextOut(LCD_POS1, LCD_LINE1, "Orientation");
-	if(islower(route_short[route_position].c)){
+	if(islower(route_short[rt_pos].c)){
 		switch(orientation) {
 			case UP:
 			TextOut(LCD_POS1, LCD_LINE2, "up");
@@ -639,10 +647,10 @@ void print_orientation()
 	}
 }
 
-void print_last_orientation()
+void print_last_orientation() // works
 {
 	TextOut(LCD_POS1, LCD_LINE4, "Last orientation");
-	if(islower(route_short[route_position].c)){
+	if(islower(route_short[rt_pos].c)){
 		switch(last_orientation) {
 			case UP:
 			TextOut(LCD_POS1, LCD_LINE5, "up");
@@ -691,6 +699,10 @@ task line_counter() // works
 			Release(lines_global_mtx); 
 			Wait(500);
 		}
+
+		if (all_done == true) {
+			break;
+		}
 	}
 }
 
@@ -700,22 +712,23 @@ task control() // works
 
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
-	for (route_position = 0; route_position < route_length_short + 2; route_position++) {
-		if (route_short[route_position].c == 's') {
+	for (rt_pos = 0; rt_pos < route_length_short + 2; rt_pos++) {
+		if (route_short[rt_pos].c == 's') {
 			break;
 		}
+		if (desired_orientation(tolower(route_short[rt_pos].c), false) == true) {
+			Wait(MECHANIC_WAIT_TIME);			
+		}
 
-		ClearScreen();
-		desired_orientation(tolower(route_short[route_position].c), route_short[route_position].p);
-		// Wait(MECHANIC_WAIT_TIME);
-		print_orientation();
-
-		Wait(MECHANIC_WAIT_TIME);
-		drive_forwards(route_short[route_position].n, route_short[route_position].p);
-		Wait(MECHANIC_WAIT_TIME);
+		drive_forwards(route_short[rt_pos].n, route_short[rt_pos].p);
+		
+		if (tolower(route_short[rt_pos].c) != tolower(route_short[rt_pos + 1].c)) {
+			Wait(MECHANIC_WAIT_TIME);
+		}
 	}
 
 	done();
+	all_done = true;
 }
 
 task emergency_stop() // works
@@ -732,7 +745,7 @@ task emergency_stop() // works
 			print_orientation();
 			print_last_orientation();
 			TextOut(LCD_POS1, LCD_LINE7, "Count:");
-			NumOut(LCD_POS1, LCD_LINE8, route_position);
+			NumOut(LCD_POS1, LCD_LINE8, rt_pos);
 			for (int i = 0; i < 20; i++) {
 				if (i % 2 == 0) {
 					un_sensor();
@@ -752,6 +765,9 @@ task emergency_stop() // works
 			}
 
 			StopAllTasks();
+		}
+		if (all_done == true) {
+			break;
 		}
 	}
 }
