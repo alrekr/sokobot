@@ -16,7 +16,7 @@
 #define KI 0.0 // was: 0.5
 #define KD 0.0 // was: 0.9
 #define TP 30.0
-#define SCALE_FACTOR 0.02
+#define SCALE_FACTOR 0.03
 
 #define LCD_POS1 0
 #define LCD_POS2 64
