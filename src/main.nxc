@@ -37,8 +37,8 @@
 #define LEFT 'l'
 #define RIGHT 'r'
 // Edit file >route< to change the route and run >routecleaner< script using Ctrl+Alt+G. DO NOT CHANGE LINE NUMBERS!
-const char route[] = {'r','d','d','d','l','l','l','L','U','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','l','l','d','R','R','l','d','d','l','l','u','L','u','u','l','l','d','R','u','r','D','D','u','l','l','D','R','d','R','R','R','d','r','U','U','r','u','u','r','r','d','L','u','l','D','u','l','l','d','R','d','d','l','l','l','l','u','u','r','D','l','d','R','R','R','d','r','U','U','U','l','u','R','d','d','d','l','l','l','l','d','l','l','u','R','R','R','R','R','d','r','U','U','s'};
-#define ROUTE_LENGTH 119
+const char route[] = {'u','U','d','d','s'};
+#define ROUTE_LENGTH 4
 
 #define TURN_ON_DIME 50
 
@@ -66,8 +66,8 @@ float left_gain = INIT;
 float right_gain = INIT;
 float back_gain = INIT;
 
-char orientation = UP;
-char last_orientation = UP;
+char orientation = DOWN;
+char last_orientation = DOWN;
 
 char route_raw[ROUTE_LENGTH + 1];
 intchar route_short[ROUTE_LENGTH + 1];
@@ -353,10 +353,6 @@ void turn_robot(char direction, bool pushing) // not tested
 
 		break;
 	}
-
-	Acquire(motor_control_mtx);
-	Off(OUT_AC);
-	Release(motor_control_mtx);
 }
 
 bool desired_orientation(char desired, bool pushing) // works
@@ -391,9 +387,9 @@ bool desired_orientation(char desired, bool pushing) // works
 
 void back_away_from_can(bool pushing) // works
 {
-	Tp = CAREFUL_SPEED;
+	Tp = FAST_SPEED;
 	bool did_turn;
-	int local_line = 0;
+	int local_line = INIT;
 	init_pid_variables();
 	
 	Acquire(motor_control_mtx);
@@ -474,16 +470,6 @@ void drive_forwards(int n, bool pushing) // works
 			Release(motor_control_mtx);
 
 			back_away_from_can(pushing);
-			Tp = CAREFUL_SPEED;
-			init_pid_variables();
-
-			Acquire(lines_global_mtx);
-			lines_global = INIT;
-			Release(lines_global_mtx);
-
-			Acquire(motor_control_mtx);
-			Off(OUT_AC);
-			Release(motor_control_mtx);
 		} else if (n > 2) {
 			Tp = FAST_SPEED;
 			
@@ -500,27 +486,15 @@ void drive_forwards(int n, bool pushing) // works
 				Release(lines_global_mtx);
 			}
 
-			while (true) {
+			while (left > BLACK_THRESHOLD && right > BLACK_THRESHOLD) {
 				pid();
-
-				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD) {
-					Acquire(motor_control_mtx);
-					Off(OUT_AC);
-					Release(motor_control_mtx);
-					break;
-				}
 			}
-
-			back_away_from_can(pushing);
-			Tp = CAREFUL_SPEED;
-			init_pid_variables();
-			Acquire(lines_global_mtx);
-			lines_global = INIT;
-			Release(lines_global_mtx);
-
+			
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
+
+			back_away_from_can(pushing);
 		}
 	} else if (pushing == false) {
 		if (n == 1) {
@@ -710,22 +684,19 @@ task control() // works - time print untested
 
 		drive_forwards(route_short[rt_pos].n, route_short[rt_pos].p);
 		
-		if (tolower(route_short[rt_pos].c) != tolower(route_short[rt_pos + 1].c)) {
+		if (orientation != tolower(route_short[rt_pos + 1].c)) {
 			Wait(MECHANIC_WAIT_TIME);
 		}
 	}
 
 	ClearScreen();
-	TextOut(LCD_POS1, LCD_LINE1, "Time was:");
+	TextOut(30, LCD_LINE4, "Time was:");
 	unsigned long elapsed = lasttick - firsttick;
 	unsigned int minutes = elapsed / 1000 / 60;
 	unsigned int seconds = (elapsed - minutes * 1000 * 60) / 1000;
 	unsigned int milliseconds = elapsed - minutes * 1000 * 60 - seconds * 1000;
-	TextOut(0, LCD_LINE2, FormatNum(2, minutes));
-	TextOut(12, LCD_LINE2, ":");
-	TextOut(18, LCD_LINE2, FormatNum(2, seconds));
-	TextOut(30, LCD_LINE2, ".");
-	TextOut(36, LCD_LINE2, FormatNum(3, milliseconds));
+	string elti = StrCat(NumToStr(minutes), ":", NumToStr(seconds), ".", NumToStr(milliseconds));
+	TextOut(30, LCD_LINE5, elti);
 	done();
 	Wait(10000);
 	all_done = true;
