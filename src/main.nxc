@@ -692,7 +692,7 @@ task line_counter() // works - not exactly, fails at turns, grrrr.
 	}
 }
 
-task control() // works
+task control() // works - time print untested
 {
 	while (SENSOR_4 != 1);
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
