@@ -75,6 +75,8 @@ int route_length_raw = INIT;
 int route_length_short = INIT;
 int rt_pos = INIT;
 
+float firsttick = INIT, lasttick = INIT;
+
 int Tp = TP, left = INIT, right = INIT, error = INIT, integral = INIT, 
 		derivative = INIT, turn = INIT, motor_a = INIT, motor_b = INIT, 
 		last_error = INIT;
@@ -729,9 +731,9 @@ task line_counter() // works - not exactly, fails at turns, grrrr.
 task control() // works
 {
 	while (SENSOR_4 != 1);
-
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
+	firsttick = CurrentTick();
 	for (rt_pos = 0; rt_pos < route_length_short + 2; rt_pos++) {
 		if (route_short[rt_pos].c == 's') {
 			break;
@@ -746,8 +748,13 @@ task control() // works
 			Wait(MECHANIC_WAIT_TIME);
 		}
 	}
-
+	lasttick = CurrentTick();
+	ClearScreen();
+	TextOut(LCD_POS1, LCD_LINE1, "Time was:");
+	float elapsed = lasttick - firsttick;
+	NumOut(LCD_POS1, LCD_LINE2, elapsed);
 	done();
+	Wait(1000);
 	all_done = true;
 }
 
