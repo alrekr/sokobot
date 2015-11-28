@@ -754,7 +754,7 @@ task control() // works
 	float elapsed = lasttick - firsttick;
 	NumOut(LCD_POS1, LCD_LINE2, elapsed);
 	done();
-	Wait(1000);
+	Wait(10000);
 	all_done = true;
 }
 
