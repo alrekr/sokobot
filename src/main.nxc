@@ -393,7 +393,7 @@ bool desired_orientation(char desired, bool pushing) // works
 void back_away_from_can(bool pushing) // works
 {
 	Tp = CAREFUL_SPEED;
-	bool dump;
+	bool did_turn;
 	int local_line = 0;
 	init_pid_variables();
 	
@@ -407,28 +407,24 @@ void back_away_from_can(bool pushing) // works
 	Off(OUT_AC);
 	Release(motor_control_mtx);
 	
-	// PlayToneEx(1760, 500, SOUND_VOLUME, false);
-	// Wait(1000);
-	
 	switch(orientation) {
 		case UP:
-		dump = desired_orientation(DOWN, pushing);
+		did_turn = desired_orientation(DOWN, pushing);
 		break;
 		case DOWN:
-		dump = desired_orientation(UP, pushing);
+		did_turn = desired_orientation(UP, pushing);
 		break;
 		case RIGHT:
-		dump = desired_orientation(LEFT, pushing);
+		did_turn = desired_orientation(LEFT, pushing);
 		break;
 		case LEFT:
-		dump = desired_orientation(RIGHT, pushing);
+		did_turn = desired_orientation(RIGHT, pushing);
 		break;
 	}
+	if (did_turn == true) {
+		Wait(MECHANIC_WAIT_TIME);
+	}
 	
-	// PlayToneEx(1760, 500, SOUND_VOLUME, false);
-	// Wait(1000);
-
-	Wait(MECHANIC_WAIT_TIME);
 	Acquire(lines_global_mtx);
 	local_line = lines_global;
 	Release(lines_global_mtx);
@@ -462,11 +458,9 @@ void drive_forwards(int n, bool pushing) // works
 		if (n <= 2) {
 			Tp = CAREFUL_SPEED;
 			
-				// PlayToneEx(440, 100, SOUND_VOLUME, false);
 			while (true) {
 				pid();
 				Acquire(lines_global_mtx);
-				// PlayToneEx(440, 100, SOUND_VOLUME, false);
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD
 					&& lines_global == n - 1) { 
 					Release(lines_global_mtx);
@@ -480,16 +474,7 @@ void drive_forwards(int n, bool pushing) // works
 			Off(OUT_AC);
 			Release(motor_control_mtx);
 
-			//Wait(FORCE_TURN_TIME);
-			// PlayToneEx(880, 150, SOUND_VOLUME, false);
-			// Wait(500);
 			back_away_from_can(pushing);
-			// PlayToneEx(880, 150, SOUND_VOLUME, false);
-			// Wait(150);
-			// PlayToneEx(440, 150, SOUND_VOLUME, false);
-			// Wait(150);
-			// PlayToneEx(880, 150, SOUND_VOLUME, false);
-			// Wait(250);
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
 
@@ -527,32 +512,12 @@ void drive_forwards(int n, bool pushing) // works
 				}
 			}
 
-			//Wait(MECHANIC_WAIT_TIME);
 			back_away_from_can(pushing);
-			// PlayToneEx(440, 150, SOUND_VOLUME, false);
-			// Wait(150);
-			// PlayToneEx(880, 150, SOUND_VOLUME, false);
-			// Wait(150);
-			// PlayToneEx(440, 150, SOUND_VOLUME, false);
-			// Wait(250);
-			// NXC doesn't support recursive calls (BS!!), so here is pushing=false, n=1 implementation:
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
 			Acquire(lines_global_mtx);
 			lines_global = INIT;
 			Release(lines_global_mtx);
-
-			// while (true) {
-				// pid();
-				// Acquire(lines_global_mtx);
-
-			// 	if (lines_global == 1) {
-			// 		Release(lines_global_mtx);
-			// 		break;
-			// 	}
-
-			// 	Release(lines_global_mtx);
-			// }
 
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
@@ -750,7 +715,7 @@ task control() // works
 			Wait(MECHANIC_WAIT_TIME);
 		}
 	}
-	
+
 	ClearScreen();
 	TextOut(LCD_POS1, LCD_LINE1, "Time was:");
 	unsigned long elapsed = lasttick - firsttick;
