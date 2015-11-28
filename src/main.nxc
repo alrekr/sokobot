@@ -10,23 +10,23 @@
 
 #define FORCE_TURN_TIME 250
 
-#define MECHANIC_WAIT_TIME 100
+#define MECHANIC_WAIT_TIME 50
 
 #define KP 30.0
 #define KI 0.0 // was: 0.5
 #define KD 0.0 // was: 0.9
 #define TP 30.0
-#define SCALE_FACTOR 0.01
+#define SCALE_FACTOR 0.02
 
 #define LCD_POS1 0
 #define LCD_POS2 64
 #define INIT 0
-#define BLACK_THRESHOLD 50 // was: 30
-#define CAREFUL_SPEED 90
-#define FAST_SPEED 95
+#define BLACK_THRESHOLD 40 // was: 30
+#define CAREFUL_SPEED 99
+#define FAST_SPEED 99
 #define SPEED_LIMIT 99
 #define MIN_SPEED 50
-#define TURN_SPEED 65 // was: 85
+#define TURN_SPEED 85 // was: 85
 #define REALLY_SLOW_TURN_SPEED 40 // was: 40
 #define CALIBRATION_TURN_SPEED 40
 #define CALIBRATION_TURN_TIME 1660 // was: 1660
@@ -287,21 +287,6 @@ void turn_robot(char direction, bool pushing) // not tested
 		Acquire(motor_control_mtx);
 		Off(OUT_AC);
 		Release(motor_control_mtx);
-		Wait(MECHANIC_WAIT_TIME);
-
-		// Acquire(motor_control_mtx);
-		// OnFwd(OUT_A, TURN_SPEED);
-		// OnRev(OUT_C, TURN_SPEED);
-		// // OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
-		// Release(motor_control_mtx);
-		// Wait(FORCE_TURN_TIME);
-
-		// while (true) {
-		// 	if (LEFT_SENSOR < BLACK_THRESHOLD) {
-		// 		break;
-		// 	}
-		// }
-
 		break;
 	case TO_THE_RIGHT:
 		Acquire(motor_control_mtx);
@@ -322,33 +307,14 @@ void turn_robot(char direction, bool pushing) // not tested
 		Acquire(motor_control_mtx);
 		Off(OUT_AC);
 		Release(motor_control_mtx);
-		Wait(MECHANIC_WAIT_TIME);
-		// Acquire(motor_control_mtx);
-		// OnRev(OUT_A, TURN_SPEED);
-		// OnFwd(OUT_C, TURN_SPEED);
-		// // OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
-		// Release(motor_control_mtx);
-		// Wait(FORCE_TURN_TIME);
-
-		// while (true) {
-		// 	if (RIGHT_SENSOR < BLACK_THRESHOLD) {
-		// 		break;
-		// 	}
-		// }
-
 		break;
 	case AROUND: 
-		// int left_last = 0;
-		// int c = 0;
-		// Acquire(lines_global_mtx);
-		// int local_line = lines_global;
-		// Release(lines_global_mtx);
 		Acquire(motor_control_mtx);
 		OnRev(OUT_A, TURN_SPEED);
-		OnFwd(OUT_C, TURN_SPEED);
-		// // OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);		
+		OnFwd(OUT_C, TURN_SPEED);	
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
+
 		switch(pushing) {
 			case true:
 				while (RIGHT_SENSOR > BLACK_THRESHOLD);
@@ -381,51 +347,10 @@ void turn_robot(char direction, bool pushing) // not tested
 				Acquire(motor_control_mtx);
 				Off(OUT_AC);
 				Release(motor_control_mtx);
-
-		// 	}
 		}
-		// while (LEFT_SENSOR < BLACK_THRESHOLD && pushing == true);
 
-		// while (true) {
-		// 	left_last = left;
-		// 	left = LEFT_SENSOR;
-
-		// 	if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD && pushing == true) {
-		// 		break;
-		// 	}
-
-		// 	Acquire(lines_global_mtx);
-
-		// 	if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD 
-		// 		&& pushing == false && local_line + 2 == lines_global) {
-		// 		Release(lines_global_mtx);
-		// 		break;
-		// 	}
-
-		// 	Release(lines_global_mtx);
-		// }
 		break;
 	}
-	
-	// switch(direction) {
-	// case TO_THE_RIGHT:
-	// 	Acquire(motor_control_mtx);
-	// 	OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
-	// 	OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
-	// 	// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, TURN_ON_DIME);
-	// 	Release(motor_control_mtx);
-	// 	while (RIGHT_SENSOR < BLACK_THRESHOLD);
-	// 	break;
-	// case TO_THE_LEFT:
-	// case AROUND:
-	// 	Acquire(motor_control_mtx);
-	// 	OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
-	// 	OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
-	// 	// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, -TURN_ON_DIME);
-	// 	Release(motor_control_mtx);
-	// 	while (RIGHT_SENSOR < BLACK_THRESHOLD);
-	// 	break;
-	// }
 
 	Acquire(motor_control_mtx);
 	Off(OUT_AC);
@@ -452,7 +377,7 @@ bool desired_orientation(char desired, bool pushing) // works
 				(orientation == RIGHT && desired == UP))   {
 		turn_robot(TO_THE_LEFT, pushing);
 	}
-	if (tolower(orientation) == tolower(desired)) {
+	if (orientation == tolower(desired)) {
 		orientation_changed = false;
 	}
 
@@ -553,7 +478,7 @@ void drive_forwards(int n, bool pushing) // works
 			Off(OUT_AC);
 			Release(motor_control_mtx);
 
-			Wait(FORCE_TURN_TIME);
+			//Wait(FORCE_TURN_TIME);
 			// PlayToneEx(880, 150, SOUND_VOLUME, false);
 			// Wait(500);
 			back_away_from_can(pushing);
@@ -600,7 +525,7 @@ void drive_forwards(int n, bool pushing) // works
 				}
 			}
 
-			Wait(MECHANIC_WAIT_TIME);
+			//Wait(MECHANIC_WAIT_TIME);
 			back_away_from_can(pushing);
 			// PlayToneEx(440, 150, SOUND_VOLUME, false);
 			// Wait(150);
@@ -871,7 +796,6 @@ task emergency_stop() // works
 task setup() // works
 {
 	init_sensors();
-	init_route();
 	auto_calibrate();
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	Wait(250);
@@ -880,9 +804,13 @@ task setup() // works
 	Precedes(control, line_counter);
 }
 
+task routes() {
+	init_route();
+}
+
 task main() // works
 {
-	Precedes(emergency_stop, setup);
+	Precedes(emergency_stop, routes, setup);
 }
 
 // task main()
