@@ -75,7 +75,7 @@ int route_length_raw = INIT;
 int route_length_short = INIT;
 int rt_pos = INIT;
 
-float firsttick = INIT, lasttick = INIT;
+unsigned long firsttick = INIT, lasttick = INIT;
 
 int Tp = TP, left = INIT, right = INIT, error = INIT, integral = INIT, 
 		derivative = INIT, turn = INIT, motor_a = INIT, motor_b = INIT, 
@@ -751,7 +751,7 @@ task control() // works
 	lasttick = CurrentTick();
 	ClearScreen();
 	TextOut(LCD_POS1, LCD_LINE1, "Time was:");
-	float elapsed = lasttick - firsttick;
+	unsigned long elapsed = lasttick - firsttick;
 	NumOut(LCD_POS1, LCD_LINE2, elapsed);
 	done();
 	Wait(10000);
