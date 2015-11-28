@@ -1,6 +1,6 @@
-#define DEBUG_WAIT 100
+#define LINE_WAIT 400
 
-#define SOUND_VOLUME 2
+#define SOUND_VOLUME 50
 #define LEFT_SENSOR (SENSOR_1 - left_offset) * left_gain
 #define RIGHT_SENSOR (SENSOR_2 - right_offset) * right_gain
 #define BACK_SENSOR (SENSOR_3 - back_offset) * back_gain
@@ -21,24 +21,24 @@
 #define LCD_POS1 0
 #define LCD_POS2 64
 #define INIT 0
-#define BLACK_THRESHOLD 10 // was: 30
+#define BLACK_THRESHOLD 50 // was: 30
 #define CAREFUL_SPEED 90
 #define FAST_SPEED 95
 #define SPEED_LIMIT 99
 #define MIN_SPEED 50
-#define TURN_SPEED 75 // was: 85
-#define REALLY_SLOW_TURN_SPEED 85 // was: 40
+#define TURN_SPEED 65 // was: 85
+#define REALLY_SLOW_TURN_SPEED 40 // was: 40
 #define CALIBRATION_TURN_SPEED 40
-#define CALIBRATION_TURN_TIME 840 // was: 1660
-#define BACK_UP_TIME 330
+#define CALIBRATION_TURN_TIME 1660 // was: 1660
+#define BACK_UP_TIME 350
 
 #define UP 'u'
 #define DOWN 'd'
 #define LEFT 'l'
 #define RIGHT 'r'
 // Edit file >route< to change the route and run >routecleaner< script using Ctrl+Alt+G. DO NOT CHANGE LINE NUMBERS!
-const char route[] = {'d','d','U','U','s'};
-#define ROUTE_LENGTH 4
+const char route[] = {'r','d','d','d','l','l','l','L','U','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','l','l','d','R','R','l','d','d','l','l','u','L','u','u','l','l','d','R','u','r','D','D','u','l','l','D','R','d','R','R','R','d','r','U','U','r','u','u','r','r','d','L','u','l','D','u','l','l','d','R','d','d','l','l','l','l','u','u','r','D','l','d','R','R','R','d','r','U','U','U','l','u','R','d','d','d','l','l','l','l','d','l','l','u','R','R','R','R','R','d','r','U','U','s'};
+#define ROUTE_LENGTH 119
 
 #define TURN_ON_DIME 50
 
@@ -220,7 +220,7 @@ void auto_calibrate() // works
 		Wait(4); // Ensures that the robot takes at least 4 ms * 1660 = 6.64 s to perform sampling, ensures at least a complete revolution
 	}
 
-	PlayToneEx(6000, 250, SOUND_VOLUME, false);
+	PlayToneEx(440, 250, SOUND_VOLUME, false);
 	Acquire(motor_control_mtx);
 	Off(OUT_AC);
 	Release(motor_control_mtx);
@@ -265,92 +265,167 @@ void pid() // works beautifully - especially as just P controller....
 	last_error = error;
 }
 
-void turn_robot(char direction, bool pushing) // mostly works
+void turn_robot(char direction, bool pushing) // not tested
 {
 	switch (direction) { //plus is left, negative is right
 	case TO_THE_LEFT:
 		Acquire(motor_control_mtx);
 		OnFwd(OUT_A, TURN_SPEED);
 		OnRev(OUT_C, TURN_SPEED);
-		// OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
+		while (LEFT_SENSOR > BLACK_THRESHOLD);
+		Acquire(motor_control_mtx);
+		Off(OUT_AC);
+		Release(motor_control_mtx);
+		Wait(MECHANIC_WAIT_TIME);
+		Acquire(motor_control_mtx);
+		OnFwd(OUT_A, TURN_SPEED);
+		OnRev(OUT_C, TURN_SPEED);
+		Release(motor_control_mtx);
+		while (LEFT_SENSOR <= BLACK_THRESHOLD);
+		Acquire(motor_control_mtx);
+		Off(OUT_AC);
+		Release(motor_control_mtx);
+		Wait(MECHANIC_WAIT_TIME);
 
-		while (true) {
-			if (LEFT_SENSOR < BLACK_THRESHOLD) {
-				break;
-			}
-		}
+		// Acquire(motor_control_mtx);
+		// OnFwd(OUT_A, TURN_SPEED);
+		// OnRev(OUT_C, TURN_SPEED);
+		// // OnFwdSync(OUT_AC, TURN_SPEED, -TURN_ON_DIME);
+		// Release(motor_control_mtx);
+		// Wait(FORCE_TURN_TIME);
+
+		// while (true) {
+		// 	if (LEFT_SENSOR < BLACK_THRESHOLD) {
+		// 		break;
+		// 	}
+		// }
 
 		break;
 	case TO_THE_RIGHT:
 		Acquire(motor_control_mtx);
 		OnRev(OUT_A, TURN_SPEED);
 		OnFwd(OUT_C, TURN_SPEED);
-		// OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
+		while (RIGHT_SENSOR > BLACK_THRESHOLD);
+		Acquire(motor_control_mtx);
+		Off(OUT_AC);
+		Release(motor_control_mtx);
+		Wait(MECHANIC_WAIT_TIME);
+		Acquire(motor_control_mtx);
+		OnRev(OUT_A, TURN_SPEED);
+		OnFwd(OUT_C, TURN_SPEED);
+		Release(motor_control_mtx);
+		while (RIGHT_SENSOR <= BLACK_THRESHOLD);
+		Acquire(motor_control_mtx);
+		Off(OUT_AC);
+		Release(motor_control_mtx);
+		Wait(MECHANIC_WAIT_TIME);
+		// Acquire(motor_control_mtx);
+		// OnRev(OUT_A, TURN_SPEED);
+		// OnFwd(OUT_C, TURN_SPEED);
+		// // OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);
+		// Release(motor_control_mtx);
+		// Wait(FORCE_TURN_TIME);
 
-		while (true) {
-			if (RIGHT_SENSOR < BLACK_THRESHOLD) {
-				break;
-			}
-		}
+		// while (true) {
+		// 	if (RIGHT_SENSOR < BLACK_THRESHOLD) {
+		// 		break;
+		// 	}
+		// }
 
 		break;
 	case AROUND: 
-		int left_last = 0;
-		int c = 0;
-		Acquire(lines_global_mtx);
-		int local_line = lines_global;
-		Release(lines_global_mtx);
+		// int left_last = 0;
+		// int c = 0;
+		// Acquire(lines_global_mtx);
+		// int local_line = lines_global;
+		// Release(lines_global_mtx);
 		Acquire(motor_control_mtx);
 		OnRev(OUT_A, TURN_SPEED);
 		OnFwd(OUT_C, TURN_SPEED);
-		// OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);		
+		// // OnFwdSync(OUT_AC, TURN_SPEED, TURN_ON_DIME);		
 		Release(motor_control_mtx);
 		Wait(FORCE_TURN_TIME);
-
-		while (true) {
-			left_last = left;
-			left = LEFT_SENSOR;
-
-			if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD && pushing == true) {
+		switch(pushing) {
+			case true:
+				while (RIGHT_SENSOR > BLACK_THRESHOLD);
+				Acquire(motor_control_mtx);
+				Off(OUT_AC);
+				Release(motor_control_mtx);
+				Wait(MECHANIC_WAIT_TIME);
+				Acquire(motor_control_mtx);
+				OnRev(OUT_A, REALLY_SLOW_TURN_SPEED);
+				OnFwd(OUT_C, REALLY_SLOW_TURN_SPEED);
+				Release(motor_control_mtx);
+				while (RIGHT_SENSOR <= BLACK_THRESHOLD);
+				Acquire(motor_control_mtx);
+				Off(OUT_AC);
+				Release(motor_control_mtx);
 				break;
-			}
+			case false:
+				while (RIGHT_SENSOR > BLACK_THRESHOLD);
+				Wait(FORCE_TURN_TIME);
+				while (RIGHT_SENSOR > BLACK_THRESHOLD);
+				Acquire(motor_control_mtx);
+				Off(OUT_AC);
+				Release(motor_control_mtx);
+				Wait(MECHANIC_WAIT_TIME);
+				Acquire(motor_control_mtx);
+				OnRev(OUT_A, REALLY_SLOW_TURN_SPEED);
+				OnFwd(OUT_C, REALLY_SLOW_TURN_SPEED);
+				Release(motor_control_mtx);
+				while (RIGHT_SENSOR <= BLACK_THRESHOLD);
+				Acquire(motor_control_mtx);
+				Off(OUT_AC);
+				Release(motor_control_mtx);
 
-			Acquire(lines_global_mtx);
-
-			if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD 
-				&& pushing == false && local_line + 2 == lines_global) {
-				Release(lines_global_mtx);
-				break;
-			}
-
-			Release(lines_global_mtx);
+		// 	}
 		}
+		// while (LEFT_SENSOR < BLACK_THRESHOLD && pushing == true);
+
+		// while (true) {
+		// 	left_last = left;
+		// 	left = LEFT_SENSOR;
+
+		// 	if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD && pushing == true) {
+		// 		break;
+		// 	}
+
+		// 	Acquire(lines_global_mtx);
+
+		// 	if (left < BLACK_THRESHOLD && left_last >= BLACK_THRESHOLD 
+		// 		&& pushing == false && local_line + 2 == lines_global) {
+		// 		Release(lines_global_mtx);
+		// 		break;
+		// 	}
+
+		// 	Release(lines_global_mtx);
+		// }
 		break;
 	}
 	
-	switch(direction) {
-	case TO_THE_LEFT:
-		Acquire(motor_control_mtx);
-		OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
-		OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
-		// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, TURN_ON_DIME);
-		Release(motor_control_mtx);
-		while (RIGHT_SENSOR < BLACK_THRESHOLD);
-		break;
-	case TO_THE_RIGHT:
-	case AROUND:
-		Acquire(motor_control_mtx);
-		OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
-		OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
-		// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, -TURN_ON_DIME);
-		Release(motor_control_mtx);
-		while (LEFT_SENSOR < BLACK_THRESHOLD);
-		break;
-	}
+	// switch(direction) {
+	// case TO_THE_RIGHT:
+	// 	Acquire(motor_control_mtx);
+	// 	OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
+	// 	OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
+	// 	// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, TURN_ON_DIME);
+	// 	Release(motor_control_mtx);
+	// 	while (RIGHT_SENSOR < BLACK_THRESHOLD);
+	// 	break;
+	// case TO_THE_LEFT:
+	// case AROUND:
+	// 	Acquire(motor_control_mtx);
+	// 	OnFwd(OUT_A, REALLY_SLOW_TURN_SPEED);
+	// 	OnRev(OUT_C, REALLY_SLOW_TURN_SPEED);
+	// 	// OnFwdSync(OUT_AC, REALLY_SLOW_TURN_SPEED, -TURN_ON_DIME);
+	// 	Release(motor_control_mtx);
+	// 	while (RIGHT_SENSOR < BLACK_THRESHOLD);
+	// 	break;
+	// }
 
 	Acquire(motor_control_mtx);
 	Off(OUT_AC);
@@ -451,7 +526,7 @@ void back_away_from_can(bool pushing) // works
 void drive_forwards(int n, bool pushing) // works
 {
 	init_pid_variables();
-
+	int local_line = INIT;
 	Acquire(lines_global_mtx);
 	lines_global = INIT;
 	Release(lines_global_mtx);
@@ -460,10 +535,11 @@ void drive_forwards(int n, bool pushing) // works
 		if (n <= 2) {
 			Tp = CAREFUL_SPEED;
 			
+				// PlayToneEx(440, 100, SOUND_VOLUME, false);
 			while (true) {
 				pid();
 				Acquire(lines_global_mtx);
-
+				// PlayToneEx(440, 100, SOUND_VOLUME, false);
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD
 					&& lines_global == n - 1) { 
 					Release(lines_global_mtx);
@@ -478,7 +554,15 @@ void drive_forwards(int n, bool pushing) // works
 			Release(motor_control_mtx);
 
 			Wait(FORCE_TURN_TIME);
+			// PlayToneEx(880, 150, SOUND_VOLUME, false);
+			// Wait(500);
 			back_away_from_can(pushing);
+			// PlayToneEx(880, 150, SOUND_VOLUME, false);
+			// Wait(150);
+			// PlayToneEx(440, 150, SOUND_VOLUME, false);
+			// Wait(150);
+			// PlayToneEx(880, 150, SOUND_VOLUME, false);
+			// Wait(250);
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
 
@@ -509,15 +593,21 @@ void drive_forwards(int n, bool pushing) // works
 				pid();
 
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD) {
-					Release(motor_control_mtx);
-					Off(OUT_AC);
 					Acquire(motor_control_mtx);
+					Off(OUT_AC);
+					Release(motor_control_mtx);
 					break;
 				}
 			}
 
 			Wait(MECHANIC_WAIT_TIME);
 			back_away_from_can(pushing);
+			// PlayToneEx(440, 150, SOUND_VOLUME, false);
+			// Wait(150);
+			// PlayToneEx(880, 150, SOUND_VOLUME, false);
+			// Wait(150);
+			// PlayToneEx(440, 150, SOUND_VOLUME, false);
+			// Wait(250);
 			// NXC doesn't support recursive calls (BS!!), so here is pushing=false, n=1 implementation:
 			Tp = CAREFUL_SPEED;
 			init_pid_variables();
@@ -525,17 +615,17 @@ void drive_forwards(int n, bool pushing) // works
 			lines_global = INIT;
 			Release(lines_global_mtx);
 
-			while (true) {
-				pid();
-				Acquire(lines_global_mtx);
+			// while (true) {
+				// pid();
+				// Acquire(lines_global_mtx);
 
-				if (lines_global == 1) {
-					Release(lines_global_mtx);
-					break;
-				}
+			// 	if (lines_global == 1) {
+			// 		Release(lines_global_mtx);
+			// 		break;
+			// 	}
 
-				Release(lines_global_mtx);
-			}
+			// 	Release(lines_global_mtx);
+			// }
 
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
@@ -683,21 +773,26 @@ void print_last_orientation() // works
 	}
 }
 
-task line_counter() // works
+task line_counter() // works - not exactly, fails at turns, grrrr.
 {
-	int last_value = 0, value = 0;
-	//TextOut(LCD_POS1, LCD_LINE7, "Lines");
+	int last_value = 0, value = 0, last_line = 0;
+	TextOut(LCD_POS1, LCD_LINE7, "Lines");
 
 	while (true) {
 		last_value = value;
+
 		value = BACK_SENSOR;
 
 		if (last_value > BLACK_THRESHOLD && value <= BLACK_THRESHOLD) {
 			Acquire(lines_global_mtx);
-			lines_global++;
-			//NumOut(LCD_POS2, LCD_LINE7, lines_global);
+			if (last_line == 0 || lines_global != last_line + 1) {
+				lines_global++;
+			} else {
+				last_line = 0;
+			}
+			NumOut(LCD_POS2, LCD_LINE7, lines_global);
 			Release(lines_global_mtx); 
-			Wait(500);
+			Wait(LINE_WAIT);
 		}
 
 		if (all_done == true) {
@@ -735,6 +830,7 @@ task emergency_stop() // works
 {
 	while (true) {
 		if (ButtonPressed(BTNCENTER, false)) {
+			ClearScreen();
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			string string1 = " ! EMERGENCY !";
@@ -788,3 +884,12 @@ task main() // works
 {
 	Precedes(emergency_stop, setup);
 }
+
+// task main()
+// {
+// 	init_sensors();
+// 	auto_calibrate();
+// 	OnRev(OUT_A, TURN_SPEED);
+// 	OnFwd(OUT_C, TURN_SPEED);
+// 	Precedes(emergency_stop, line_counter);
+// }
