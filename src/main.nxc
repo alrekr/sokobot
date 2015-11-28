@@ -318,37 +318,37 @@ void turn_robot(char direction, bool pushing) // not tested
 		Wait(FORCE_TURN_TIME);
 
 		switch(pushing) {
-			case true:
-				while (RIGHT_SENSOR > BLACK_THRESHOLD);
-				Acquire(motor_control_mtx);
-				Off(OUT_AC);
-				Release(motor_control_mtx);
-				Wait(MECHANIC_WAIT_TIME);
-				Acquire(motor_control_mtx);
-				OnRev(OUT_A, REALLY_SLOW_TURN_SPEED);
-				OnFwd(OUT_C, REALLY_SLOW_TURN_SPEED);
-				Release(motor_control_mtx);
-				while (RIGHT_SENSOR <= BLACK_THRESHOLD);
-				Acquire(motor_control_mtx);
-				Off(OUT_AC);
-				Release(motor_control_mtx);
-				break;
-			case false:
-				while (RIGHT_SENSOR > BLACK_THRESHOLD);
-				Wait(FORCE_TURN_TIME);
-				while (RIGHT_SENSOR > BLACK_THRESHOLD);
-				Acquire(motor_control_mtx);
-				Off(OUT_AC);
-				Release(motor_control_mtx);
-				Wait(MECHANIC_WAIT_TIME);
-				Acquire(motor_control_mtx);
-				OnRev(OUT_A, REALLY_SLOW_TURN_SPEED);
-				OnFwd(OUT_C, REALLY_SLOW_TURN_SPEED);
-				Release(motor_control_mtx);
-				while (RIGHT_SENSOR <= BLACK_THRESHOLD);
-				Acquire(motor_control_mtx);
-				Off(OUT_AC);
-				Release(motor_control_mtx);
+		case true:
+			while (RIGHT_SENSOR > BLACK_THRESHOLD);
+			Acquire(motor_control_mtx);
+			Off(OUT_AC);
+			Release(motor_control_mtx);
+			Wait(MECHANIC_WAIT_TIME);
+			Acquire(motor_control_mtx);
+			OnRev(OUT_A, REALLY_SLOW_TURN_SPEED);
+			OnFwd(OUT_C, REALLY_SLOW_TURN_SPEED);
+			Release(motor_control_mtx);
+			while (RIGHT_SENSOR <= BLACK_THRESHOLD);
+			Acquire(motor_control_mtx);
+			Off(OUT_AC);
+			Release(motor_control_mtx);
+			break;
+		case false:
+			while (RIGHT_SENSOR > BLACK_THRESHOLD);
+			Wait(FORCE_TURN_TIME);
+			while (RIGHT_SENSOR > BLACK_THRESHOLD);
+			Acquire(motor_control_mtx);
+			Off(OUT_AC);
+			Release(motor_control_mtx);
+			Wait(MECHANIC_WAIT_TIME);
+			Acquire(motor_control_mtx);
+			OnRev(OUT_A, REALLY_SLOW_TURN_SPEED);
+			OnFwd(OUT_C, REALLY_SLOW_TURN_SPEED);
+			Release(motor_control_mtx);
+			while (RIGHT_SENSOR <= BLACK_THRESHOLD);
+			Acquire(motor_control_mtx);
+			Off(OUT_AC);
+			Release(motor_control_mtx);
 		}
 
 		break;
@@ -385,7 +385,6 @@ bool desired_orientation(char desired, bool pushing) // works
 
 	last_orientation = orientation;
 	orientation = tolower(desired);
-
 
 	return orientation_changed;
 }
@@ -424,7 +423,7 @@ void back_away_from_can(bool pushing) // works
 	if (did_turn == true) {
 		Wait(MECHANIC_WAIT_TIME);
 	}
-	
+
 	Acquire(lines_global_mtx);
 	local_line = lines_global;
 	Release(lines_global_mtx);
@@ -722,9 +721,11 @@ task control() // works
 	unsigned int minutes = elapsed / 1000 / 60;
 	unsigned int seconds = (elapsed - minutes * 1000 * 60) / 1000;
 	unsigned int milliseconds = elapsed - minutes * 1000 * 60 - seconds * 1000;
-	NumOut(LCD_POS1, LCD_LINE2, minutes);
-	NumOut(LCD_POS1, LCD_LINE3, seconds);
-	NumOut(LCD_POS1, LCD_LINE4, milliseconds);
+	TextOut(0, LCD_LINE2, FormatNum(2, minutes));
+	TextOut(12, LCD_LINE2, ":");
+	TextOut(18, LCD_LINE2, FormatNum(2, seconds));
+	TextOut(30, LCD_LINE2, ".");
+	TextOut(36, LCD_LINE2, FormatNum(3, milliseconds));
 	done();
 	Wait(10000);
 	all_done = true;
@@ -791,12 +792,3 @@ task main() // works
 {
 	Precedes(emergency_stop, routes, setup);
 }
-
-// task main()
-// {
-// 	init_sensors();
-// 	auto_calibrate();
-// 	OnRev(OUT_A, TURN_SPEED);
-// 	OnFwd(OUT_C, TURN_SPEED);
-// 	Precedes(emergency_stop, line_counter);
-// }
