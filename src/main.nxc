@@ -29,7 +29,7 @@
 #define TURN_SPEED 90 // was: 85
 #define REALLY_SLOW_TURN_SPEED 40 // was: 40
 #define CALIBRATION_TURN_SPEED 40
-#define CALIBRATION_TURN_TIME 1660 // was: 1660
+#define CALIBRATION_TURN_TIME 1250 // was: 1660
 #define BACK_UP_TIME 350
 
 #define UP 'u'
@@ -198,7 +198,7 @@ void auto_calibrate() // works
 		} else if (back < back_min) {
 			back_min = back;
 		}
-		Wait(4); // Ensures that the robot takes at least 4 ms * 1660 = 6.64 s to perform sampling, ensures at least a complete revolution
+		Wait(2); // Ensures that the robot takes at least 4 ms * 1660 = 6.64 s to perform sampling, ensures at least a complete revolution
 	}
 
 	PlayToneEx(440, 250, SOUND_VOLUME, false);
