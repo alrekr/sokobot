@@ -26,10 +26,10 @@
 #define FAST_SPEED 99
 #define SPEED_LIMIT 99
 #define MIN_SPEED 50
-#define TURN_SPEED 90 // was: 85
+#define TURN_SPEED 99 // was: 85
 #define REALLY_SLOW_TURN_SPEED 40 // was: 40
 #define CALIBRATION_TURN_SPEED 40
-#define CALIBRATION_TURN_TIME 1250 // was: 1660
+#define CALIBRATION_TURN_TIME 1200 // was: 1660
 #define BACK_UP_TIME 350
 
 #define UP 'u'
