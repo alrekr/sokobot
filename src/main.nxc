@@ -29,7 +29,7 @@
 #define TURN_SPEED 99 // was: 85
 #define REALLY_SLOW_TURN_SPEED 40 // was: 40
 #define CALIBRATION_TURN_SPEED 40
-#define CALIBRATION_TURN_TIME 1200 // was: 1660
+#define CALIBRATION_TURN_TIME 1300 // was: 1660
 #define BACK_UP_TIME 350
 
 #define UP 'u'
@@ -66,8 +66,8 @@ float left_gain = INIT;
 float right_gain = INIT;
 float back_gain = INIT;
 
-char orientation = UP;
-char last_orientation = UP;
+char orientation = RIGHT;
+char last_orientation = RIGHT;
 
 char route_raw[ROUTE_LENGTH + 1];
 intchar route_short[ROUTE_LENGTH + 1];
@@ -643,7 +643,7 @@ task line_counter() // works
 
 task control() // works
 {
-	turn_robot(TO_THE_LEFT, false);
+	turn_robot(TO_THE_RIGHT, false);
 	while (SENSOR_4 != 1);
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
 	firsttick = CurrentTick();
