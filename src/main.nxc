@@ -619,11 +619,9 @@ void print_last_orientation() // works
 task line_counter() // works
 {
 	int last_value = 0, value = 0, last_line = 0;
-	TextOut(LCD_POS1, LCD_LINE7, "Lines");
 
 	while (true) {
 		last_value = value;
-
 		value = BACK_SENSOR;
 
 		if (last_value > BLACK_THRESHOLD && value <= BLACK_THRESHOLD) {
@@ -633,7 +631,6 @@ task line_counter() // works
 			} else {
 				last_line = 0;
 			}
-			NumOut(LCD_POS2, LCD_LINE7, lines_global);
 			Release(lines_global_mtx); 
 			Wait(LINE_WAIT);
 		}
