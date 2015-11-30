@@ -26,7 +26,7 @@
 #define FAST_SPEED 99
 #define SPEED_LIMIT 99
 #define MIN_SPEED 50
-#define TURN_SPEED 85 // was: 85
+#define TURN_SPEED 90 // was: 85
 #define REALLY_SLOW_TURN_SPEED 40 // was: 40
 #define CALIBRATION_TURN_SPEED 40
 #define CALIBRATION_TURN_TIME 1660 // was: 1660
@@ -37,8 +37,8 @@
 #define LEFT 'l'
 #define RIGHT 'r'
 // Edit file >route< to change the route and run >routecleaner< script using Ctrl+Alt+G. DO NOT CHANGE LINE NUMBERS!
-const char route[] = {'u','U','d','d','s'};
-#define ROUTE_LENGTH 4
+const char route[] = {'r','d','d','d','l','l','l','L','U','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','l','l','d','R','R','l','d','d','l','l','u','L','u','u','l','l','d','R','u','r','D','D','u','l','l','D','R','d','R','R','R','d','r','U','U','r','u','u','r','r','d','L','u','l','D','u','l','l','d','R','d','d','l','l','l','l','u','u','r','D','l','d','R','R','R','d','r','U','U','U','l','u','R','d','d','d','l','l','l','l','d','l','l','u','R','R','R','R','R','d','r','U','U','s'};
+#define ROUTE_LENGTH 119
 
 #define TURN_ON_DIME 50
 
@@ -66,8 +66,8 @@ float left_gain = INIT;
 float right_gain = INIT;
 float back_gain = INIT;
 
-char orientation = DOWN;
-char last_orientation = DOWN;
+char orientation = UP;
+char last_orientation = UP;
 
 char route_raw[ROUTE_LENGTH + 1];
 intchar route_short[ROUTE_LENGTH + 1];
@@ -174,15 +174,7 @@ void auto_calibrate() // works
 	Acquire(motor_control_mtx);
 	OnFwd(OUT_A, CALIBRATION_TURN_SPEED);
 	OnRev(OUT_C, CALIBRATION_TURN_SPEED);
-	// OnRevSync(OUT_AC, CALIBRATION_TURN_SPEED, TURN_ON_DIME);
 	Release(motor_control_mtx);
-
-	TextOut(LCD_POS1, LCD_LINE1, "L, min");
-	TextOut(LCD_POS1, LCD_LINE2, "L, max");
-	TextOut(LCD_POS1, LCD_LINE4, "R, min");
-	TextOut(LCD_POS1, LCD_LINE5, "R, max");
-	TextOut(LCD_POS1, LCD_LINE7, "B, min");
-	TextOut(LCD_POS1, LCD_LINE8, "B, max");
 
 	for (int i = 0; i < CALIBRATION_TURN_TIME; i++) {
 		left = SENSOR_1;
@@ -191,33 +183,20 @@ void auto_calibrate() // works
 
 		if (left > left_max) {
 			left_max = left;
-			//The outputting in this function works as a little wait function.
-			TextOut(LCD_POS2, LCD_LINE2, "    ");
-			NumOut(LCD_POS2, LCD_LINE2, left_max);
 		} else if (left < left_min) {
 			left_min = left;
-			TextOut(LCD_POS2, LCD_LINE1, "    ");
-			NumOut(LCD_POS2, LCD_LINE1, left_min);
 		}
 		
 		if (right > right_max) {
 			right_max = right;
-			TextOut(LCD_POS2, LCD_LINE5, "    ");
-			NumOut(LCD_POS2, LCD_LINE5, right_max);
 		} else if (right < right_min) {
 			right_min = right;
-			TextOut(LCD_POS2, LCD_LINE4, "    ");
-			NumOut(LCD_POS2, LCD_LINE4, right_min);
 		}
 		
 		if (back > back_max) {
 			back_max = back;
-			TextOut(LCD_POS2, LCD_LINE8, "    ");
-			NumOut(LCD_POS2, LCD_LINE8, back_max);
 		} else if (back < back_min) {
 			back_min = back;
-			TextOut(LCD_POS2, LCD_LINE7, "    ");
-			NumOut(LCD_POS2, LCD_LINE7, back_min);
 		}
 		Wait(4); // Ensures that the robot takes at least 4 ms * 1660 = 6.64 s to perform sampling, ensures at least a complete revolution
 	}
@@ -267,7 +246,7 @@ void pid() // works beautifully - especially as just P controller....
 	last_error = error;
 }
 
-void turn_robot(char direction, bool pushing) // not tested
+void turn_robot(char direction, bool pushing) // works
 {
 	switch (direction) { //plus is left, negative is right
 	case TO_THE_LEFT:
@@ -456,6 +435,7 @@ void drive_forwards(int n, bool pushing) // works
 			while (true) {
 				pid();
 				Acquire(lines_global_mtx);
+
 				if (left < BLACK_THRESHOLD && right < BLACK_THRESHOLD
 					&& lines_global == n - 1) { 
 					Release(lines_global_mtx);
@@ -468,7 +448,6 @@ void drive_forwards(int n, bool pushing) // works
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-
 			back_away_from_can(pushing);
 		} else if (n > 2) {
 			Tp = FAST_SPEED;
@@ -489,11 +468,10 @@ void drive_forwards(int n, bool pushing) // works
 			while (left > BLACK_THRESHOLD && right > BLACK_THRESHOLD) {
 				pid();
 			}
-			
+
 			Acquire(motor_control_mtx);
 			Off(OUT_AC);
 			Release(motor_control_mtx);
-
 			back_away_from_can(pushing);
 		}
 	} else if (pushing == false) {
@@ -532,7 +510,7 @@ void drive_forwards(int n, bool pushing) // works
 
 				if (lines_global == (n - 1) && once_flag == false) {
 					Release(lines_global_mtx);
-					Tp = CAREFUL_SPEED;
+					// Tp = CAREFUL_SPEED;
 					once_flag = true;
 				} else if (lines_global == n) {
 					Release(lines_global_mtx);
@@ -638,7 +616,7 @@ void print_last_orientation() // works
 	}
 }
 
-task line_counter() // works - not exactly, fails at turns, grrrr.
+task line_counter() // works
 {
 	int last_value = 0, value = 0, last_line = 0;
 	TextOut(LCD_POS1, LCD_LINE7, "Lines");
@@ -666,11 +644,11 @@ task line_counter() // works - not exactly, fails at turns, grrrr.
 	}
 }
 
-task control() // works - time print untested
+task control() // works
 {
+	turn_robot(TO_THE_LEFT, false);
 	while (SENSOR_4 != 1);
 	PlayToneEx(440, 150, SOUND_VOLUME, false);
-	// Wait(250);
 	firsttick = CurrentTick();
 	
 	for (rt_pos = 0; rt_pos < route_length_short + 2; rt_pos++) {
@@ -755,7 +733,8 @@ task setup() // works
 	Precedes(control, line_counter);
 }
 
-task routes() {
+task routes() // works
+{
 	init_route();
 }
 
