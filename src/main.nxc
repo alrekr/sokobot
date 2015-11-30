@@ -37,8 +37,8 @@
 #define LEFT 'l'
 #define RIGHT 'r'
 // Edit file >route< to change the route and run >routecleaner< script using Ctrl+Alt+G. DO NOT CHANGE LINE NUMBERS!
-const char route[] = {'r','d','d','d','l','l','l','L','U','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','l','l','d','R','R','l','d','d','l','l','u','L','u','u','l','l','d','R','u','r','D','D','u','l','l','D','R','d','R','R','R','d','r','U','U','r','u','u','r','r','d','L','u','l','D','u','l','l','d','R','d','d','l','l','l','l','u','u','r','D','l','d','R','R','R','d','r','U','U','U','l','u','R','d','d','d','l','l','l','l','d','l','l','u','R','R','R','R','R','d','r','U','U','s'};
-#define ROUTE_LENGTH 119
+const char route[] = {'r','d','d','d','l','l','l','L','U','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','l','l','d','R','R','l','d','d','l','l','u','L','u','u','l','l','d','D','R','d','d','l','l','u','R','R','R','R','R','d','r','U','U','r','u','u','r','r','d','L','u','l','D','u','l','l','d','R','d','d','l','l','l','l','l','u','u','u','r','D','D','l','d','R','R','R','R','d','r','U','U','U','l','u','R','d','d','d','l','l','l','l','u','u','r','D','l','d','R','R','R','d','r','U','U','s'};
+#define ROUTE_LENGTH 121
 
 #define TURN_ON_DIME 50
 
